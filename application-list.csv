@@ -1,0 +1,170 @@
+repo_name,stars,forks,language,repo_url,username,issues,last_commit,description
+linux,145319,46490,C,https://github.com/torvalds/linux,torvalds,0,2023-01-28T08:32:31Z,Linux kernel source tree
+scrcpy,75879,7990,C,https://github.com/Genymobile/scrcpy,Genymobile,1195,2023-01-28T09:26:27Z,Display and control your Android device
+netdata,61767,5433,C,https://github.com/netdata/netdata,netdata,225,2023-01-28T15:38:24Z,"Real-time performance monitoring, done right! https://www.netdata.cloud"
+cpython,50424,25672,C,https://github.com/python/cpython,python,8171,2023-02-03T01:14:23Z,The Python programming language
+obs-studio,45153,6581,C,https://github.com/obsproject/obs-studio,obsproject,419,2023-01-28T18:39:00Z,OBS Studio - Free and open source software for live streaming and screen recording
+git,45032,24601,C,https://github.com/git/git,git,0,2023-01-28T07:18:38Z,Git Source Code Mirror - This is a publish-only repository but pull requests can be turned into patches to the mailing list via GitGitGadget (https://gitgitgadget.github.io/). Please follow Documentation/SubmittingPatches procedure for any of your improvements.
+Ventoy,44607,3180,C,https://github.com/ventoy/Ventoy,ventoy,369,2023-01-27T19:08:07Z,A new bootable USB solution.
+php-src,34920,7412,C,https://github.com/php/php-src,php,315,2023-01-28T18:02:03Z,The PHP Interpreter
+FFmpeg,33793,10496,C,https://github.com/FFmpeg/FFmpeg,FFmpeg,0,2023-01-28T18:35:04Z,Mirror of https://git.ffmpeg.org/ffmpeg.git
+wrk,33722,2781,C,https://github.com/wg/wrk,wg,119,2023-01-19T00:59:31Z,Modern HTTP benchmarking tool
+ijkplayer,31054,7921,C,https://github.com/bilibili/ijkplayer,bilibili,2737,2022-12-23T14:16:42Z,"Android/iOS video player based on FFmpeg n3.4, with MediaCodec, VideoToolbox support."
+curl,28297,5552,C,https://github.com/curl/curl,curl,50,2023-01-28T18:16:08Z,"A command line tool and library for transferring data with URL syntax, supporting DICT, FILE, FTP, FTPS, GOPHER, GOPHERS, HTTP, HTTPS, IMAP, IMAPS, LDAP, LDAPS, MQTT, POP3, POP3S, RTMP, RTMPS, RTSP, SCP, SFTP, SMB, SMBS, SMTP, SMTPS, TELNET, TFTP, WS and WSS. libcurl offers a myriad of powerful features"
+tmux,27539,1844,C,https://github.com/tmux/tmux,tmux,16,2023-01-23T12:02:07Z,tmux source code
+lede,24606,18588,C,https://github.com/coolsnowwolf/lede,coolsnowwolf,486,2023-01-28T13:54:38Z,Lean's LEDE source
+the_silver_searcher,24555,1373,C,https://github.com/ggreer/the_silver_searcher,ggreer,410,2023-01-16T06:46:11Z,"A code-searching tool similar to ack, but faster."
+os-tutorial,24431,3042,C,https://github.com/cfenollosa/os-tutorial,cfenollosa,63,2022-12-04T15:13:22Z,How to create an OS from scratch
+jq,24106,1391,C,https://github.com/stedolan/jq,stedolan,665,2023-01-15T00:21:17Z,Command-line JSON processor
+darknet,23765,20952,C,https://github.com/pjreddie/darknet,pjreddie,1777,2022-11-04T13:27:54Z,Convolutional Neural Networks
+emscripten,23226,2982,C,https://github.com/emscripten-core/emscripten,emscripten-core,1201,2023-01-28T17:00:09Z,Emscripten: An LLVM-to-WebAssembly Compiler
+rufus,21517,2188,C,https://github.com/pbatard/rufus,pbatard,13,2023-01-27T17:23:20Z,The Reliable USB Formatting Utility
+mpv,21292,2530,C,https://github.com/mpv-player/mpv,mpv-player,804,2023-01-28T18:13:14Z,🎥 Command line video player
+stb,20944,7297,C,https://github.com/nothings/stb,nothings,98,2023-01-23T08:49:11Z,stb single-file public domain libraries for C/C++
+libuv,20785,3298,C,https://github.com/libuv/libuv,libuv,106,2023-01-26T21:10:32Z,Cross-platform asynchronous I/O
+The-Art-Of-Programming-By-July,20690,7179,C,https://github.com/julycoding/The-Art-Of-Programming-By-July,julycoding,47,2023-01-07T06:23:00Z,本项目曾冲到全球第一，干货集锦见本页面最底部，另完整精致的纸质版《编程之法：面试和算法心得》已在京东/当当上销售
+openssl,20686,8810,C,https://github.com/openssl/openssl,openssl,1826,2023-01-28T06:47:59Z,TLS/SSL and crypto library
+masscan,20497,2854,C,https://github.com/robertdavidgraham/masscan,robertdavidgraham,336,2023-01-11T19:10:16Z,"TCP port scanner, spews SYN packets asynchronously, scanning entire Internet in under 5 minutes."
+TDengine,20496,4597,C,https://github.com/taosdata/TDengine,taosdata,800,2023-01-28T10:51:30Z,"TDengine is an open source, high-performance, cloud native time-series database optimized for Internet of Things (IoT), Connected Cars, Industrial IoT and DevOps."
+How-to-Make-a-Computer-Operating-System,20150,3398,C,https://github.com/SamyPesse/How-to-Make-a-Computer-Operating-System,SamyPesse,44,2021-12-16T09:10:55Z,How to Make a Computer Operating System in C++
+zstd,19380,1839,C,https://github.com/facebook/zstd,facebook,89,2023-01-28T17:14:49Z,Zstandard - Fast real-time compression algorithm
+Tasmota,19119,4276,C,https://github.com/arendst/Tasmota,arendst,10,2023-01-28T18:37:04Z,"Alternative firmware for ESP8266 with easy configuration using webUI, OTA updates, automation using timers or rules, expandability and entirely local control over MQTT, HTTP, Serial or KNX. Full documentation at"
+HarmonyOS,18693,3328,C,https://github.com/Awesome-HarmonyOS/HarmonyOS,Awesome-HarmonyOS,0,2022-07-07T01:24:35Z,A curated list of awesome things related to HarmonyOS. 华为鸿蒙操作系统。
+nginx,17885,6148,C,https://github.com/nginx/nginx,nginx,0,2023-01-24T11:17:31Z,"An official read-only mirror of http://hg.nginx.org/nginx/ which is updated hourly. Pull requests on GitHub cannot be accepted and will be automatically closed. The proper way to submit changes to nginx is via the nginx development mailing list, see http://nginx.org/en/docs/contributing_changes.html"
+radare2,17456,2810,C,https://github.com/radareorg/radare2,radareorg,820,2023-01-28T17:57:02Z,UNIX-like reverse engineering framework and command-line toolset
+mimikatz,16667,3229,C,https://github.com/gentilkiwi/mimikatz,gentilkiwi,126,2022-11-29T16:00:30Z,A little tool to play with Windows security
+hashcat,16489,2465,C,https://github.com/hashcat/hashcat,hashcat,193,2023-01-27T15:20:51Z,World's fastest and most advanced password recovery utility
+bcc,16444,3270,C,https://github.com/iovisor/bcc,iovisor,701,2023-01-28T18:33:41Z,"BCC - Tools for BPF-based Linux IO analysis, networking, monitoring, and more"
+nnn,15717,647,C,https://github.com/jarun/nnn,jarun,1,2023-01-28T04:32:55Z,n³ The unorthodox terminal file manager
+goaccess,15708,1022,C,https://github.com/allinurl/goaccess,allinurl,345,2023-01-02T19:03:47Z,GoAccess is a real-time web log analyzer and interactive viewer that runs in a terminal in *nix systems or through your browser.
+C,15405,3890,C,https://github.com/TheAlgorithms/C,TheAlgorithms,5,2023-01-27T06:25:06Z,"Collection of various algorithms in mathematics, machine learning, computer science, physics, etc implemented in C for educational purposes."
+timescaledb,14410,758,C,https://github.com/timescale/timescaledb,timescale,424,2023-01-28T10:44:03Z,An open-source time-series SQL database optimized for fast ingest and complex queries.  Packaged as a PostgreSQL extension.
+yabai,14350,494,C,https://github.com/koekeishiya/yabai,koekeishiya,206,2023-01-15T15:44:40Z,A tiling window manager for macOS based on binary space partitioning
+qmk_firmware,14262,30430,C,https://github.com/qmk/qmk_firmware,qmk,252,2023-01-28T16:43:18Z,Open-source keyboard firmware for Atmel AVR and Arm USB families
+openwrt,13774,8240,C,https://github.com/openwrt/openwrt,openwrt,1756,2023-01-28T18:39:37Z,This repository is a mirror of https://git.openwrt.org/openwrt/openwrt.git It is for reference only and is not active for check-ins.  We will continue to accept Pull Requests here. They will be merged via staging trees then into openwrt.git.
+ish,13361,718,C,https://github.com/ish-app/ish,ish-app,448,2023-01-26T06:16:15Z,Linux shell for iOS
+open-gpu-kernel-modules,12850,917,C,https://github.com/NVIDIA/open-gpu-kernel-modules,NVIDIA,90,2023-01-24T18:05:59Z,NVIDIA Linux open GPU kernel module source
+blurhash,12717,293,C,https://github.com/woltapp/blurhash,woltapp,19,2023-01-23T20:03:35Z,A very compact representation of a placeholder for an image.
+memcached,12390,3146,C,https://github.com/memcached/memcached,memcached,53,2023-01-28T03:09:30Z,memcached development tree
+nginx-rtmp-module,12369,3433,C,https://github.com/arut/nginx-rtmp-module,arut,1012,2022-06-21T08:56:37Z,NGINX-based Media Streaming Server
+kcp,12067,2289,C,https://github.com/skywind3000/kcp,skywind3000,153,2022-12-04T05:02:42Z,:zap: KCP - A Fast and Reliable ARQ Protocol
+raspberry-pi-os,11980,1224,C,https://github.com/s-matyukevich/raspberry-pi-os,s-matyukevich,49,2022-02-16T17:29:18Z,Learning operating system development using Linux kernel and Raspberry Pi
+reactos,11938,1490,C,https://github.com/reactos/reactos,reactos,0,2023-01-28T16:07:55Z,A free Windows-compatible Operating System
+HandBrake,11935,1071,C,https://github.com/HandBrake/HandBrake,HandBrake,245,2023-01-27T22:31:45Z,HandBrake's main development repository
+sway,11822,978,C,https://github.com/swaywm/sway,swaywm,681,2023-01-26T21:55:41Z,i3-compatible Wayland compositor
+tengine,11819,2454,C,https://github.com/alibaba/tengine,alibaba,376,2023-01-25T22:45:23Z,A distribution of Nginx with some advanced features
+brotli,11813,1164,C,https://github.com/google/brotli,google,55,2023-01-22T14:30:54Z,Brotli compression format
+skynet,11722,3931,C,https://github.com/cloudwu/skynet,cloudwu,9,2023-01-06T10:31:29Z,A lightweight online game framework
+postgres,11709,3654,C,https://github.com/postgres/postgres,postgres,0,2023-01-28T02:09:37Z,"Mirror of the official PostgreSQL GIT repository. Note that this is just a *mirror* - we don't work with pull requests on github. To contribute, please see https://wiki.postgresql.org/wiki/Submitting_a_Patch"
+twemproxy,11684,2030,C,https://github.com/twitter/twemproxy,twitter,143,2023-01-14T09:22:36Z,"A fast, light-weight proxy for memcached and redis"
+raylib,11536,1401,C,https://github.com/raysan5/raylib,raysan5,14,2023-01-28T18:26:41Z,A simple and easy-to-use library to enjoy videogames programming
+tig,11461,596,C,https://github.com/jonas/tig,jonas,165,2023-01-22T21:46:03Z,Text-mode interface for git
+WindTerm,11451,815,C,https://github.com/kingToolbox/WindTerm,kingToolbox,915,2022-08-22T09:04:45Z,A professional cross-platform SSH/Sftp/Shell/Telnet/Serial terminal.
+esp8266_deauther,11223,2337,C,https://github.com/SpacehuhnTech/esp8266_deauther,SpacehuhnTech,106,2023-01-20T05:15:06Z,Affordable WiFi hacking platform for testing and learning
+ExplorerPatcher,11178,588,C,https://github.com/valinet/ExplorerPatcher,valinet,0,2022-11-17T14:13:12Z,This project aims to enhance the working environment on Windows
+lvgl,11176,2289,C,https://github.com/lvgl/lvgl,lvgl,41,2023-01-28T07:09:25Z,"Embedded graphics library to create beautiful UIs for any MCU, MPU and display type. It's boosted by a professional yet affordable drag and drop UI editor, called SquareLine Studio."
+openresty,11088,1451,C,https://github.com/openresty/openresty,openresty,256,2023-01-19T14:01:11Z,High Performance Web Platform Based on Nginx and LuaJIT
+webview,10842,845,C,https://github.com/webview/webview,webview,170,2023-01-23T21:14:24Z,Tiny cross-platform webview library for C/C++/Golang. Uses WebKit (Gtk/Cocoa) and Edge (Windows)
+OpenCorePkg,10837,1919,C,https://github.com/acidanthera/OpenCorePkg,acidanthera,0,2023-01-26T22:45:17Z,OpenCore bootloader
+libsodium,10715,1642,C,https://github.com/jedisct1/libsodium,jedisct1,0,2023-01-27T19:04:20Z,"A modern, portable, easy to use crypto library."
+systemd,10643,3207,C,https://github.com/systemd/systemd,systemd,1809,2023-01-28T10:44:30Z,The systemd System and Service Manager
+rofi,10551,569,C,https://github.com/davatorium/rofi,davatorium,38,2023-01-26T08:25:09Z,"Rofi: A window switcher, application launcher and dmenu replacement"
+lua-nginx-module,10456,1991,C,https://github.com/openresty/lua-nginx-module,openresty,275,2023-01-28T18:30:31Z,Embed the Power of Lua into NGINX HTTP servers
+libui,10392,615,C,https://github.com/andlabs/libui,andlabs,173,2022-07-30T22:52:58Z,Simple and portable (but not inflexible) GUI library in C that uses the native GUI technologies of each platform it supports.
+seafile,10372,1484,C,https://github.com/haiwen/seafile,haiwen,151,2023-01-24T17:00:02Z,"High performance file syncing and sharing, with also Markdown WYSIWYG editing, Wiki, file label and other knowledge management features."
+BlackHole,10326,432,C,https://github.com/ExistentialAudio/BlackHole,ExistentialAudio,0,2023-01-19T18:01:08Z,BlackHole is a modern macOS virtual audio driver that allows applications to pass audio to other applications with zero additional latency.
+cosmopolitan,10324,337,C,https://github.com/jart/cosmopolitan,jart,62,2023-01-28T17:12:13Z,build-once run-anywhere c library
+h2o,10260,816,C,https://github.com/h2o/h2o,h2o,560,2023-01-28T18:37:51Z,"H2O - the optimized HTTP/1, HTTP/2, HTTP/3 server"
+vlc,10256,3301,C,https://github.com/videolan/vlc,videolan,0,2023-01-28T15:10:05Z,"VLC media player - All pull requests are ignored, please follow https://wiki.videolan.org/Sending_Patches_VLC/"
+glfw,10131,4095,C,https://github.com/glfw/glfw,glfw,441,2023-01-27T18:24:30Z,"A multi-platform library for OpenGL, OpenGL ES, Vulkan, window and input"
+arduino-esp32,10034,6360,C,https://github.com/espressif/arduino-esp32,espressif,358,2023-01-28T02:23:08Z,Arduino core for the ESP32
+DOOM,9828,1707,C,https://github.com/id-Software/DOOM,id-Software,0,2022-10-12T05:22:35Z,DOOM Open Source Release
+esp-idf,9817,6127,C,https://github.com/espressif/esp-idf,espressif,1231,2023-01-28T07:19:48Z,Espressif IoT Development Framework. Official development framework for Espressif SoCs.
+Craft,9578,1283,C,https://github.com/fogleman/Craft,fogleman,79,2023-01-06T19:06:10Z,A simple Minecraft clone written in C using modern OpenGL (shaders).
+phpredis,9572,2118,C,https://github.com/phpredis/phpredis,phpredis,114,2023-01-14T11:36:42Z,A PHP extension for Redis
+wcdb,9566,1286,C,https://github.com/Tencent/wcdb,Tencent,176,2023-01-06T08:28:48Z,WCDB is a cross-platform database framework developed by WeChat.
+darling,9502,389,C,https://github.com/darlinghq/darling,darlinghq,239,2023-01-26T00:04:55Z,Darwin/macOS emulation layer for Linux
+libevent,9493,3178,C,https://github.com/libevent/libevent,libevent,120,2023-01-28T16:29:13Z,Event notification library
+sumatrapdf,9475,1483,C,https://github.com/sumatrapdfreader/sumatrapdf,sumatrapdfreader,523,2023-01-19T06:21:52Z,SumatraPDF reader
+Tinyhttpd,9415,3705,C,https://github.com/EZLippi/Tinyhttpd,EZLippi,18,2022-05-17T09:13:39Z,Tinyhttpd 是J. David Blackstone在1999年写的一个不到 500 行的超轻量型 Http Server，用来学习非常不错，可以帮助我们真正理解服务器程序的本质。官网:http://tinyhttpd.sourceforge.net
+redis-3.0-annotated,9289,4067,C,https://github.com/huangz1990/redis-3.0-annotated,huangz1990,16,2022-02-23T12:37:05Z,带有详细注释的 Redis 3.0 代码（annotated Redis 3.0 source code）。
+sanitizers,9247,904,C,https://github.com/google/sanitizers,google,501,2023-01-21T00:30:12Z,"AddressSanitizer, ThreadSanitizer, MemorySanitizer"
+mongoose,9107,2485,C,https://github.com/cesanta/mongoose,cesanta,2,2023-01-27T22:45:39Z,Embedded Web Server
+Dummy-Robot,8969,1981,C,https://github.com/peng-zhihui/Dummy-Robot,peng-zhihui,90,2023-01-04T01:24:20Z,我的超迷你机械臂机器人项目。
+Sandboxie,8866,944,C,https://github.com/sandboxie-plus/Sandboxie,sandboxie-plus,365,2023-01-28T17:37:41Z,Sandboxie Plus & Classic
+libgit2,8861,2286,C,https://github.com/libgit2/libgit2,libgit2,371,2023-01-27T12:17:50Z,"A cross-platform, linkable library implementation of Git that you can use in your application."
+audacity,8802,1975,C,https://github.com/audacity/audacity,audacity,748,2023-01-27T21:16:44Z,Audio Editor
+torch7,8769,2379,C,https://github.com/torch/torch7,torch,284,2022-10-26T03:55:13Z,http://torch.ch
+toxcore,8704,1285,C,https://github.com/irungentoo/toxcore,irungentoo,92,2023-01-24T22:46:46Z,The future of online communications.
+coturn,8691,1756,C,https://github.com/coturn/coturn,coturn,215,2023-01-22T00:50:40Z,coturn TURN server project
+zfs,8649,1565,C,https://github.com/openzfs/zfs,openzfs,935,2023-01-28T02:40:53Z,OpenZFS on Linux and FreeBSD
+japronto,8594,595,C,https://github.com/squeaky-pl/japronto,squeaky-pl,79,2022-08-06T05:22:12Z,Screaming-fast Python 3.5+ HTTP toolkit integrated with pipelining HTTP server based on uvloop and picohttpparser.
+redis,58304,22151,C,https://github.com/redis/redis,redis,1794,2023-01-28T09:45:45Z,"Redis is an in-memory database that persists on disk. The data model is key-value, but many different kind of values are supported: Strings, Lists, Sets, Sorted Sets, Hashes, Streams, HyperLogLogs, Bitmaps."
+FreeRDP,7825,20769,C,https://github.com/FreeRDP/FreeRDP,FreeRDP,493,2023-01-27T15:01:34Z,FreeRDP is a free remote desktop protocol library and clients
+micropython,15822,6106,C,https://github.com/micropython/micropython,micropython,1205,2023-01-28T15:03:26Z,MicroPython - a lean and efficient Python implementation for microcontrollers and constrained systems
+httpd,3138,1026,C,https://github.com/apache/httpd,apache,56,2023-02-01T23:17:10Z,Mirror of Apache HTTP Server. Issues: http://issues.apache.org
+USTC-CS-Courses-Resource,1000,5063,C,https://github.com/ustcwpz/USTC-CS-Courses-Resource,ustcwpz,0,2020-12-13T06:51:12Z,USTC计算机学院课程资源
+Windows-driver-samples,5793,4622,C,https://github.com/microsoft/Windows-driver-samples,microsoft,302,2023-01-27T21:27:28Z,This repo contains driver samples prepared for use with Microsoft Visual Studio and the Windows Driver Kit (WDK). It contains both Universal Windows Driver and desktop-only driver samples.
+qemu,7320,4443,C,https://github.com/qemu/qemu,qemu,0,2023-01-24T15:39:15Z,Official QEMU mirror. Please see http://wiki.qemu.org/Contribute/SubmitAPatch for how to submit changes to QEMU. Pull Requests are ignored. Please only use release tarballs from the QEMU website.
+rt-thread,7894,4244,C,https://github.com/RT-Thread/rt-thread,RT-Thread,137,2023-01-28T18:08:41Z,RT-Thread is an open source IoT operating system.
+klipper,6064,4134,C,https://github.com/Klipper3d/klipper,Klipper3d,9,2023-01-28T04:25:45Z,Klipper is a 3d-printer firmware
+your_first_code,97,4103,C,https://github.com/holbertonschool/your_first_code,holbertonschool,0,2023-01-27T20:05:03Z,"A very simple snippet of C code, for Holberton School's admissions."
+json-tutorial,6599,3935,C,https://github.com/miloyip/json-tutorial,miloyip,84,2022-10-11T07:42:12Z,从零开始的 JSON 库教程
+gcc,7244,3842,C,https://github.com/gcc-mirror/gcc,gcc-mirror,0,2023-01-21T23:37:56Z,
+rt-n56u,3084,3515,C,https://github.com/hanwckf/rt-n56u,hanwckf,262,2022-09-25T16:06:54Z,Padavan
+Mirai-Source-Code,7638,3371,C,https://github.com/jgamblin/Mirai-Source-Code,jgamblin,0,2022-05-01T23:02:42Z,Leaked Mirai Source Code for Research/IoC Development Purposes
+xmrig,7349,3348,C,https://github.com/xmrig/xmrig,xmrig,409,2023-01-26T18:08:08Z,"RandomX, KawPow, CryptoNight and GhostRider unified CPU/GPU miner and RandomX benchmark"
+nodemcu-firmware,7257,3068,C,https://github.com/nodemcu/nodemcu-firmware,nodemcu,74,2023-01-21T03:32:08Z,"Lua based interactive firmware for ESP8266, ESP8285 and ESP32"
+librdkafka,6484,2931,C,https://github.com/confluentinc/librdkafka,confluentinc,172,2023-01-28T01:53:14Z,The Apache Kafka C/C++ library
+Configurations,1584,2932,C,https://github.com/MarlinFirmware/Configurations,MarlinFirmware,6,2023-01-27T17:23:41Z,Configurations for Marlin Firmware
+grbl,4891,2889,C,https://github.com/grbl/grbl,grbl,486,2021-11-02T21:56:41Z,"An open source, embedded, high performance g-code-parser and CNC milling controller written in optimized C that will run on a straight Arduino"
+mbed-os,4274,2875,C,https://github.com/ARMmbed/mbed-os,ARMmbed,178,2023-01-26T08:48:09Z,Arm Mbed OS is a platform operating system designed for the internet of things
+cJSON,8364,2824,C,https://github.com/DaveGamble/cJSON,DaveGamble,108,2023-01-24T02:20:30Z,Ultralightweight JSON parser in ANSI C
+windows-kernel-exploits,6937,2778,C,https://github.com/SecWiki/windows-kernel-exploits,SecWiki,7,2021-06-11T23:29:15Z,windows-kernel-exploits   Windows平台提权漏洞集合
+u-boot,2583,2722,C,https://github.com/u-boot/u-boot,u-boot,0,2023-01-28T07:55:33Z,"""Das U-Boot"" Source Tree"
+openvpn,8014,2613,C,https://github.com/OpenVPN/openvpn,OpenVPN,11,2023-01-25T17:51:33Z,OpenVPN  is  an open source VPN daemon
+contiki,3520,2571,C,https://github.com/contiki-os/contiki,contiki-os,476,2021-10-03T12:28:34Z,"The official git repository for Contiki, the open source OS for the Internet of Things"
+Linux-NetSpeed,3580,2526,C,https://github.com/Chikage0o0/Linux-NetSpeed,Chikage0o0,28,2022-11-10T04:00:26Z,将Linux现常用的网络加速集成在一起
+freebsd-src,6717,2507,C,https://github.com/freebsd/freebsd-src,freebsd,0,2023-01-28T18:10:13Z,FreeBSD src tree (read-only mirror)
+pygame,5685,2488,C,https://github.com/pygame/pygame,pygame,325,2023-01-28T18:36:31Z,"🐍🎮 pygame (the library) is a Free and Open Source python programming language library for making multimedia applications like games built on top of the excellent SDL library. C, Python, Native, OpenGL."
+xrdp,4310,2465,C,https://github.com/neutrinolabs/xrdp,neutrinolabs,308,2023-01-28T12:37:02Z,xrdp: an open source RDP server
+betaflight,6462,2446,C,https://github.com/betaflight/betaflight,betaflight,209,2023-01-28T16:06:22Z,Open Source Flight Controller Firmware
+CMake,5454,2384,C,https://github.com/Kitware/CMake,Kitware,0,2023-01-28T11:23:18Z,Mirror of CMake upstream repository
+kbengine,5100,2341,C,https://github.com/kbengine/kbengine,kbengine,159,2022-12-13T18:37:12Z,A MMOG engine of server.
+SoftEtherVPN,9664,2331,C,https://github.com/SoftEtherVPN/SoftEtherVPN,SoftEtherVPN,197,2023-01-28T18:34:56Z,Cross-platform multi-protocol VPN software. Pull requests are welcome. The stable version is available at https://github.com/SoftEtherVPN/SoftEtherVPN_Stable.
+cpuminer,838,2314,C,https://github.com/jgarzik/cpuminer,jgarzik,0,2022-07-02T14:58:26Z,CPU miner for bitcoin
+janus-gateway,6938,2279,C,https://github.com/meetecho/janus-gateway,meetecho,7,2023-01-23T16:35:23Z,Janus WebRTC Server
+Learn-Algorithms,7061,2270,C,https://github.com/nonstriater/Learn-Algorithms,nonstriater,4,2021-12-23T03:59:42Z,算法学习笔记
+mbedtls,3966,2187,C,https://github.com/Mbed-TLS/mbedtls,Mbed-TLS,964,2023-01-28T10:36:09Z,"An open source, portable, easy to use, readable and flexible TLS library, and reference implementation of the PSA Cryptography API."
+mosquitto,6971,2097,C,https://github.com/eclipse/mosquitto,eclipse,558,2023-01-27T21:20:20Z,Eclipse Mosquitto - An open source MQTT broker
+zlib,4149,2088,C,https://github.com/madler/zlib,madler,128,2023-01-25T04:49:14Z,A massively spiffy yet delicately unobtrusive compression library.
+TheFatRat,7320,2075,C,https://github.com/screetsec/TheFatRat,screetsec,55,2022-11-28T07:42:44Z,"Thefatrat a massive exploiting tool : Easy tool to generate backdoor and easy tool to post exploitation attack like browser attack and etc . This tool compiles a malware with popular payload and then the compiled malware can be execute on windows, android, mac . The malware that created with this tool also have an ability to bypass most AV software protection ."
+nmap,7313,2044,C,https://github.com/nmap/nmap,nmap,500,2023-01-27T23:09:06Z,Nmap - the Network Mapper. Github mirror of official SVN repository.
+openwrt-passwall,3795,1987,C,https://github.com/xiaorouji/openwrt-passwall,xiaorouji,7,2023-01-28T16:05:34Z,A commonly used proxy toolchain for Openwrt LuCI Application.
+edk2,3402,1982,C,https://github.com/tianocore/edk2,tianocore,1,2023-01-28T18:12:28Z,EDK II
+Mailspring,13707,855,C,https://github.com/Foundry376/Mailspring,Foundry376,7,2023-01-19T21:17:46Z,":love_letter: A beautiful, fast and fully open source mail client for Mac, Windows and Linux."
+nuklear,13513,1124,C,https://github.com/vurtun/nuklear,vurtun,207,2020-01-03T21:36:41Z,A single-header ANSI C gui library
+robotjs,11508,883,C,https://github.com/octalmage/robotjs,octalmage,142,2022-12-06T22:17:24Z,Node.js Desktop Automation.
+darwin-xnu,10512,1640,C,https://github.com/apple/darwin-xnu,apple,0,2023-01-13T01:48:01Z,"The Darwin Kernel (mirror). This repository is a pure mirror and contributions are currently not accepted via pull-requests, please submit your contributions via https://developer.apple.com/bug-reporting/"
+ffmpeg-libav-tutorial,8474,832,C,https://github.com/leandromoreira/ffmpeg-libav-tutorial,leandromoreira,27,2023-01-04T23:36:11Z,"FFmpeg libav tutorial - learn how media works from basic to transmuxing, transcoding and more. Translations: 🇺🇸 🇨🇳 🇰🇷 🇪🇸 🇻🇳"
+proxychains-ng,8459,1012,C,https://github.com/rofl0r/proxychains-ng,rofl0r,111,2022-12-10T19:12:44Z,"proxychains ng (new generation) - a preloader which hooks calls to sockets in dynamically linked programs and redirects it through one or more socks/http proxies. continuation of the unmaintained proxychains project. the sf.net page is currently not updated, use releases from github release page instead."
+systeminformer,8448,1173,C,https://github.com/winsiderss/systeminformer,winsiderss,83,2023-01-26T18:37:23Z,"A free, powerful, multi-purpose tool that helps you monitor system resources, debug software and detect malware. Brought to you by Winsider Seminars & Solutions, Inc. @ http://www.windows-internals.com"
+zephyr,7176,4518,C,https://github.com/zephyrproject-rtos/zephyr,zephyrproject-rtos,1440,2023-01-29T12:37:35Z,"Primary Git Repository for the Zephyr Project. Zephyr is a new generation, scalable, optimized, secure RTOS for multiple hardware architectures."
+xv6-public,6128,3313,C,https://github.com/mit-pdos/xv6-public,mit-pdos,0,2023-01-28T06:33:50Z,xv6 OS
+xLua,8183,2338,C,https://github.com/Tencent/xLua,Tencent,191,2023-01-13T07:44:36Z,"xLua is a lua programming solution for  C# ( Unity, .Net, Mono) , it supports android, ios, windows, linux, osx, etc."
+devart-template,9,1958,C,https://github.com/ofZach/devart-template,ofZach,0,2014-06-13T17:05:46Z,
+vlmcsd,6964,1945,C,https://github.com/Wind4/vlmcsd,Wind4,3,2021-11-16T14:43:21Z,"KMS Emulator in C (currently runs on Linux including Android, FreeBSD, Solaris, Minix, Mac OS, iOS, Windows with or without Cygwin)"
+fastdfs,8381,1939,C,https://github.com/happyfish100/fastdfs,happyfish100,412,2023-01-15T02:41:39Z,"FastDFS is an open source high performance distributed file system (DFS). It's major functions include: file storing, file syncing and file accessing, and design for high capacity and load balance. Wechat/Weixin public account (Chinese Language): fastdfs"
+poco,6718,1910,C,https://github.com/pocoproject/poco,pocoproject,212,2023-01-27T20:28:41Z,"The POCO C++ Libraries are powerful cross-platform C++ libraries for building network- and internet-based applications that run on desktop, server, mobile, IoT, and embedded systems."
+source,1592,1871,C,https://github.com/lede-project/source,lede-project,0,2023-01-29T15:03:01Z,Mirror of https://git.lede-project.org/?p=source.git Please send your PRs against this tree. They will be merged via staging trees and appear in this tree once the staging trees get merged back into source.git
+RIOT,4353,1860,C,https://github.com/RIOT-OS/RIOT,RIOT-OS,349,2023-01-29T21:28:50Z,RIOT -  The friendly OS for IoT
+helloworld,2688,1841,C,https://github.com/fw876/helloworld,fw876,40,2023-01-27T04:13:05Z,
+john,7255,1837,C,https://github.com/openwall/john,openwall,471,2023-01-18T23:38:00Z,"John the Ripper jumbo - advanced offline password cracker, which supports hundreds of hash and cipher types, and runs on many operating systems, CPUs, GPUs, and even some FPGAs"
+ImageMagick,8371,1119,C,https://github.com/ImageMagick/ImageMagick,ImageMagick,116,2023-01-30T08:56:14Z,🧙‍♂️ ImageMagick 7
+react-native-code-push,8338,1340,C,https://github.com/microsoft/react-native-code-push,microsoft,54,2023-01-24T07:40:40Z,React Native module for CodePush
+c4,8003,1297,C,https://github.com/rswier/c4,rswier,12,2022-09-10T02:41:16Z,C in four functions
+db_tutorial,7922,857,C,https://github.com/cstack/db_tutorial,cstack,23,2023-01-01T14:39:53Z,Writing a sqlite clone from scratch in C
+ccminer,255,1819,C,https://github.com/cbuchner1/ccminer,cbuchner1,86,2021-08-16T18:59:54Z,Christian Buchner's & Christian H.'s CUDA miner project
+git-training,315,1804,C,https://github.com/Taeung/git-training,Taeung,7,2023-01-16T05:34:17Z,":octocat:  Don't think about git, just do git"
+GoodbyeDPI,8212,771,C,https://github.com/ValdikSS/GoodbyeDPI,ValdikSS,54,2022-08-10T17:20:53Z,GoodbyeDPI — Deep Packet Inspection circumvention utility (for Windows)
+tini,8192,414,C,https://github.com/krallin/tini,krallin,20,2023-01-30T19:28:46Z,A tiny but valid `init` for containers
