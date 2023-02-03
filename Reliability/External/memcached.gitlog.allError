@@ -1,0 +1,658 @@
+[DF] commit 683bb98a55ba19f69c4e2a60b9104ed2edc971c3
+Author: dormando <dormando@rydia.net>
+Date:   Thu Dec 1 22:03:11 2022 -0800
+
+    proxy: lua registry corruption on data chunk error
+    
+    This was a nightmare to debug; I need some better tools here.
+    
+    1) There's a helper routine that ensures the lua coroutine is cleared up
+       if an error happens while handling the network/etc.
+    2) On reading the value data from a set request, there's one last error
+       that can happen before the coroutine ownership is taken from the
+       connection object.
+    3) The bug was the set read completion code was unreferencing the
+       coroutine, but could still throw an error if the set data was
+       malformed.
+    4) Thus it would double free the reference.
+    5) Then really weird things wout happen to the registry: the same
+       reference ID would get handed out twice.
+    6) This blows up code later on as it gets data it doesn't expect, and
+       some referenced objects get clobbered.
+    7) This was triggered in combination of an earlier bug that would cause
+       bad data chunks on short writes in certain situations.
+    
+    Took a long time to get a repro case outside of a benchmark; was looking
+    in the wrong place.
+
+diff --git a/proto_proxy.c b/proto_proxy.c
+index 95c9de1..5a40c7d 100644
+--- a/proto_proxy.c
++++ b/proto_proxy.c
+@@ -419,8 +419,9 @@ void complete_nread_proxy(conn *c) {
+     conn_set_state(c, conn_new_cmd);
+ 
+     // Grab our coroutine.
++    // Leave the reference alone in case we error out, so the conn cleanup
++    // routine can handle it properly.
+     lua_rawgeti(L, LUA_REGISTRYINDEX, c->proxy_coro_ref);
+-    luaL_unref(L, LUA_REGISTRYINDEX, c->proxy_coro_ref);
+     lua_State *Lc = lua_tothread(L, -1);
+     mcp_request_t *rq = luaL_checkudata(Lc, -1, "mcp.request");
+ 
+@@ -439,6 +440,7 @@ void complete_nread_proxy(conn *c) {
+     rq->pr.vbuf = c->item;
+     c->item = NULL;
+     c->item_malloced = false;
++    luaL_unref(L, LUA_REGISTRYINDEX, c->proxy_coro_ref);
+     c->proxy_coro_ref = 0;
+ 
+     proxy_run_coroutine(Lc, c->resp, NULL, c);
+
+[NR] [ML] commit 1b28620a751db5a0ae667abf13442bf69a40c301
+Author: Raphael Isemann <teemperor@gmail.com>
+Date:   Fri Mar 18 10:04:02 2022 +0100
+
+    Fix a memory leak in cache_limit_revised_downward_test
+
+diff --git a/testapp.c b/testapp.c
+index d4a8602..cc51d91 100644
+--- a/testapp.c
++++ b/testapp.c
+@@ -217,6 +217,8 @@ static enum test_return cache_limit_revised_downward_test(void)
+     assert(cache->total == allocated_num-1);
+     cache_destroy(cache);
+ 
++    free(alloc_objs);
++
+     return TEST_PASS;
+ }
+ 
+
+[ML] commit b6fd865985dd8285bd963dfd429d7f475d54d77f
+Author: dormando <dormando@rydia.net>
+Date:   Fri Feb 4 15:36:15 2022 -0800
+
+    proxy: more misc fixes
+    
+    - fixes potential memory leaks if an error is generated while creating a
+      pool object.
+    - misc comment updates and error handling.
+    - avoid crash if attempting to route commands that don't have a key.
+
+diff --git a/memcached.c b/memcached.c
+index 87db72c..743a75a 100644
+--- a/memcached.c
++++ b/memcached.c
+@@ -1815,6 +1815,7 @@ void server_stats(ADD_STAT add_stats, conn *c) {
+     if (settings.proxy_enabled) {
+         APPEND_STAT("proxy_conn_requests", "%llu", (unsigned long long)thread_stats.proxy_conn_requests);
+         APPEND_STAT("proxy_conn_errors", "%llu", (unsigned long long)thread_stats.proxy_conn_errors);
++        APPEND_STAT("proxy_conn_oom", "%llu", (unsigned long long)thread_stats.proxy_conn_oom);
+     }
+ #endif
+     APPEND_STAT("delete_misses", "%llu", (unsigned long long)thread_stats.delete_misses);
+diff --git a/memcached.h b/memcached.h
+index 7826c41..7a577f4 100644
+--- a/memcached.h
++++ b/memcached.h
+@@ -337,7 +337,8 @@ struct slab_stats {
+ #ifdef PROXY
+ #define PROXY_THREAD_STATS_FIELDS \
+     X(proxy_conn_requests) \
+-    X(proxy_conn_errors)
++    X(proxy_conn_errors) \
++    X(proxy_conn_oom)
+ #endif
+ 
+ /**
+diff --git a/proto_proxy.c b/proto_proxy.c
+index a489a33..525fdb5 100644
+--- a/proto_proxy.c
++++ b/proto_proxy.c
+@@ -542,11 +542,8 @@ static void *_proxy_manager_thread(void *arg) {
+         lua_State *L = ctx->proxy_state;
+         mcp_pool_t *p;
+         STAILQ_FOREACH(p, &head, next) {
+-            // walk the hash selector backends and unref.
+-            for (int x = 0; x < p->pool_size; x++) {
+-                luaL_unref(L, LUA_REGISTRYINDEX, p->pool[x].ref);
+-            }
+-            // unref the phc ref.
++            // we let the pool object _gc() handle backend references.
++
+             luaL_unref(L, LUA_REGISTRYINDEX, p->phc_ref);
+             // need to... unref self.
+             // NOTE: double check if we really need to self-reference.
+@@ -554,7 +551,6 @@ static void *_proxy_manager_thread(void *arg) {
+             // before lua garbage collects the object. other things hold a
+             // reference to the object though.
+             luaL_unref(L, LUA_REGISTRYINDEX, p->self_ref);
+-            // that's it? let it float?
+         }
+         pthread_mutex_unlock(&ctx->config_lock);
+ 
+@@ -2675,7 +2671,11 @@ static void mcp_queue_io(conn *c, mc_resp *resp, int coro_ref, lua_State *Lc) {
+     lua_setmetatable(Lc, -2);
+ 
+     io_pending_proxy_t *p = do_cache_alloc(c->thread->io_cache);
+-    // FIXME: can this fail? Yes, I believe it can. need handling.
++    if (p == NULL) {
++        WSTAT_INCR(c, proxy_conn_oom, 1);
++        proxy_lua_error(Lc, "out of memory allocating from IO cache");
++        return;
++    }
+ 
+     // this is a re-cast structure, so assert that we never outsize it.
+     assert(sizeof(io_pending_t) >= sizeof(io_pending_proxy_t));
+@@ -2779,14 +2779,16 @@ static int mcplib_response_gc(lua_State *L) {
+     return 0;
+ }
+ 
++// NOTE: backends are global objects owned by pool objects.
++// Each pool has a "proxy pool object" distributed to each worker VM.
++// proxy pool objects are held at the same time as any request exists on a
++// backend, in the coroutine stack during yield()
++// To free a backend: All proxies for a pool are collected, then the central
++// pool is collected, which releases backend references, which allows backend
++// to be collected.
+ static int mcplib_backend_gc(lua_State *L) {
+     mcp_backend_t *be = luaL_checkudata(L, -1, "mcp.backend");
+ 
+-    // TODO: need to validate it's impossible to cause a backend to be garbage
+-    // collected while outstanding requests exist.
+-    // might need some kind of failsafe here to leak memory and warn instead
+-    // of killing the object and crashing? or is that too late since we're in
+-    // __gc?
+     assert(STAILQ_EMPTY(&be->io_head));
+ 
+     mcmc_disconnect(be->client);
+@@ -2797,7 +2799,7 @@ static int mcplib_backend_gc(lua_State *L) {
+ 
+ static int mcplib_backend(lua_State *L) {
+     luaL_checkstring(L, -4); // label for indexing backends.
+-    const char *ip = luaL_checkstring(L, -3); // FIXME: checklstring?
++    const char *ip = luaL_checkstring(L, -3);
+     const char *port = luaL_checkstring(L, -2);
+     double weight = luaL_checknumber(L, -1);
+ 
+@@ -2892,6 +2894,12 @@ static int mcplib_pool_gc(lua_State *L) {
+     assert(p->refcount == 0);
+     pthread_mutex_destroy(&p->lock);
+ 
++    for (int x = 0; x < p->pool_size; x++) {
++        if (p->pool[x].ref) {
++            luaL_unref(L, LUA_REGISTRYINDEX, p->pool[x].ref);
++        }
++    }
++
+     return 0;
+ }
+ 
+@@ -2902,9 +2910,10 @@ static int mcplib_pool(lua_State *L) {
+     luaL_checktype(L, 1, LUA_TTABLE);
+     int n = luaL_len(L, 1); // get length of array table
+ 
+-    mcp_pool_t *p = lua_newuserdatauv(L, sizeof(mcp_pool_t) + sizeof(mcp_pool_be_t) * n, 0);
+-    // FIXME: zero the memory? then __gc will fix up server references on
+-    // errors.
++    size_t plen = sizeof(mcp_pool_t) + sizeof(mcp_pool_be_t) * n;
++    mcp_pool_t *p = lua_newuserdatauv(L, plen, 0);
++    // Zero the memory before use, so we can realibly use __gc to clean up
++    memset(p, 0, plen);
+     p->pool_size = n;
+     p->refcount = 0;
+     pthread_mutex_init(&p->lock, NULL);
+@@ -2915,14 +2924,12 @@ static int mcplib_pool(lua_State *L) {
+     lua_pushvalue(L, -1); // dupe self for reference.
+     p->self_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+ 
+-    // TODO: ensure to increment refcounts for servers.
+     // remember lua arrays are 1 indexed.
+     for (int x = 1; x <= n; x++) {
+         mcp_pool_be_t *s = &p->pool[x-1];
+         lua_geti(L, 1, x); // get next server into the stack.
+-        // TODO: do we leak memory if we bail here?
+-        // the stack should clear, then release the userdata + etc?
+-        // - yes it should leak memory for the registry indexed items.
++        // If we bail here, the pool _gc() should handle releasing any backend
++        // references we made so far.
+         s->be = luaL_checkudata(L, -1, "mcp.backend");
+         s->ref = luaL_ref(L, LUA_REGISTRYINDEX); // references and pops object.
+     }
+@@ -2964,7 +2971,7 @@ static int mcplib_pool(lua_State *L) {
+             lua_setfield(L, -2, "addr");
+             lua_pushstring(L, be->port);
+             lua_setfield(L, -2, "port");
+-            // TODO: weight/etc?
++            // TODO (v2): weight/etc?
+ 
+             // set the backend table into the new pool table.
+             lua_rawseti(L, -2, x);
+@@ -2984,10 +2991,12 @@ static int mcplib_pool(lua_State *L) {
+             return 0;
+         }
+ 
+-        // TODO: validate response arguments.
+         // -1 is lightuserdata ptr to the struct (which must be owned by the
+         // userdata), which is later used for internal calls.
+         struct proxy_hash_caller *phc;
++
++        luaL_checktype(L, -1, LUA_TUSERDATA);
++        luaL_checktype(L, -2, LUA_TUSERDATA);
+         phc = lua_touserdata(L, -1);
+         memcpy(&p->phc, phc, sizeof(*phc));
+         lua_pop(L, 1);
+@@ -3035,7 +3044,10 @@ static int mcplib_pool_proxy_call(lua_State *L) {
+     mcp_request_t *rq = luaL_checkudata(L, -1, "mcp.request");
+ 
+     // we have a fast path to the key/length.
+-    // FIXME: indicator for if request actually has a key token or not.
++    if (!rq->pr.keytoken) {
++        proxy_lua_error(L, "cannot route commands without key");
++        return 0;
++    }
+     const char *key = MCP_PARSER_KEY(rq->pr);
+     size_t len = rq->pr.klen;
+     uint32_t lookup = p->phc.selector_func(key, len, p->phc.ctx);
+@@ -3057,7 +3069,7 @@ static int mcplib_pool_proxy_call(lua_State *L) {
+         rq->be = p->pool[lookup-1].be;
+     }
+ 
+-    // now yield request, hash selector up.
++    // now yield request, pool up.
+     return lua_yield(L, 2);
+ }
+ 
+@@ -3427,6 +3439,7 @@ static int process_request(mcp_parser_t *pr, const char *command, size_t cmdlen)
+     } else {
+         cl = cmdlen - 2; // FIXME: ensure cmdlen can never be < 2?
+     }
++    pr->keytoken = 0;
+     pr->has_space = false;
+     pr->parsed = cl + 1;
+     pr->request = command;
+@@ -4025,8 +4038,8 @@ typedef struct mcp_await_s {
+     mc_resp *resp; // the top level mc_resp to fill in (as if we were an iop)
+ } mcp_await_t;
+ 
+-// local restable = mcp.await(request, hashselectors, num_wait)
+-// NOTE: need to hold onto the hash selector objects since those hold backend
++// local restable = mcp.await(request, pools, num_wait)
++// NOTE: need to hold onto the pool objects since those hold backend
+ // references. Here we just keep a reference to the argument table.
+ static int mcplib_await(lua_State *L) {
+     mcp_request_t *rq = luaL_checkudata(L, 1, "mcp.request");
+@@ -4041,9 +4054,9 @@ static int mcplib_await(lua_State *L) {
+             wait_for = n;
+         }
+     }
+-    // TODO: bail if selector table was 0 len? else bad things can happen.
++    // TODO: bail if pool table was 0 len? else bad things can happen.
+ 
+-    // TODO: quickly loop table once and ensure they're all hash selectors?
++    // TODO: quickly loop table once and ensure they're all pools?
+     int argtable_ref = luaL_ref(L, LUA_REGISTRYINDEX); // pops the arg table
+     int req_ref = luaL_ref(L, LUA_REGISTRYINDEX); // pops request object.
+ 
+
+[NR] [DF] commit 0d4901071c74f9c3b63162ef5887a5c5b981f385
+Author: David Carlier <devnexen@gmail.com>
+Date:   Sat Feb 22 01:24:54 2020 +0000
+
+    restart: fix potential double free
+
+diff --git a/restart.c b/restart.c
+index 92a7295..9a83d3a 100644
+--- a/restart.c
++++ b/restart.c
+@@ -148,6 +148,7 @@ enum restart_get_kv_ret restart_get_kv(void *ctx, char **key, char **val) {
+     // have to re-assign it into the structure anyway.
+     if (c->line != NULL) {
+         free(c->line);
++        c->line = NULL;
+     }
+ 
+     if (getline(&line, &len, c->f) != -1) {
+@@ -198,6 +199,7 @@ enum restart_get_kv_ret restart_get_kv(void *ctx, char **key, char **val) {
+         } else {
+             // FIXME: proper error chain.
+             fprintf(stderr, "[restart] invalid metadata line:\n\n%s\n", line);
++            free(line);
+             return RESTART_BADLINE;
+         }
+     } else {
+
+[NR] [ML] commit 32bf2c3668a9ebed1374190bbefe9b783928f0ba
+Author: David Carlier <devnexen@gmail.com>
+Date:   Thu Jan 23 13:55:08 2020 +0000
+
+    unit tests couple of memory leak fixes proposals.
+
+diff --git a/testapp.c b/testapp.c
+index b670708..43fcb45 100644
+--- a/testapp.c
++++ b/testapp.c
+@@ -322,38 +322,45 @@ static enum test_return test_stats_prefix_record_set(void) {
+ static enum test_return test_stats_prefix_dump(void) {
+     int hashval = hash("abc", 3) % PREFIX_HASH_SIZE;
+     char tmp[500];
+-    char *expected;
++    char *buf;
++    const char *expected;
+     int keynum;
+     int length;
+ 
+     stats_prefix_clear();
+ 
+-    assert(strcmp("END\r\n", stats_prefix_dump(&length)) == 0);
++    assert(strcmp("END\r\n", (buf = stats_prefix_dump(&length))) == 0);
+     assert(5 == length);
+     stats_prefix_record_set("abc:123", 7);
++    free(buf);
+     expected = "PREFIX abc get 0 hit 0 set 1 del 0\r\nEND\r\n";
+-    assert(strcmp(expected, stats_prefix_dump(&length)) == 0);
++    assert(strcmp(expected, (buf = stats_prefix_dump(&length))) == 0);
+     assert(strlen(expected) == length);
+     stats_prefix_record_get("abc:123", 7, false);
++    free(buf);
+     expected = "PREFIX abc get 1 hit 0 set 1 del 0\r\nEND\r\n";
+-    assert(strcmp(expected, stats_prefix_dump(&length)) == 0);
++    assert(strcmp(expected, (buf = stats_prefix_dump(&length))) == 0);
+     assert(strlen(expected) == length);
+     stats_prefix_record_get("abc:123", 7, true);
++    free(buf);
+     expected = "PREFIX abc get 2 hit 1 set 1 del 0\r\nEND\r\n";
+-    assert(strcmp(expected, stats_prefix_dump(&length)) == 0);
++    assert(strcmp(expected, (buf = stats_prefix_dump(&length))) == 0);
+     assert(strlen(expected) == length);
+     stats_prefix_record_delete("abc:123", 7);
++    free(buf);
+     expected = "PREFIX abc get 2 hit 1 set 1 del 1\r\nEND\r\n";
+-    assert(strcmp(expected, stats_prefix_dump(&length)) == 0);
++    assert(strcmp(expected, (buf = stats_prefix_dump(&length))) == 0);
+     assert(strlen(expected) == length);
+ 
+     /* The order of results might change if we switch hash functions. */
+     stats_prefix_record_delete("def:123", 7);
++    free(buf);
+     expected = "PREFIX abc get 2 hit 1 set 1 del 1\r\n"
+                "PREFIX def get 0 hit 0 set 0 del 1\r\n"
+                "END\r\n";
+-    assert(strcmp(expected, stats_prefix_dump(&length)) == 0);
++    assert(strcmp(expected, (buf = stats_prefix_dump(&length))) == 0);
+     assert(strlen(expected) == length);
++    free(buf);
+ 
+     /* Find a key that hashes to the same bucket as "abc" */
+     bool found_match = false;
+@@ -372,8 +379,12 @@ static enum test_return test_stats_prefix_dump(void) {
+              "PREFIX abc get 2 hit 1 set 1 del 1\r\n"
+              "PREFIX def get 0 hit 0 set 0 del 1\r\n"
+              "END\r\n", keynum);
+-    assert(strcmp(tmp, stats_prefix_dump(&length)) == 0);
++    assert(strcmp(tmp, (buf = stats_prefix_dump(&length))) == 0);
+     assert(strlen(tmp) == length);
++    free(buf);
++
++    /* Marking the end of these tests */
++    stats_prefix_clear();
+ 
+     return TEST_PASS;
+ }
+@@ -2182,6 +2193,7 @@ static enum test_return test_issue_101(void) {
+         con = connect_server("127.0.0.1", port, false, enable_ssl);
+         assert(con);
+         ret = test_binary_noop();
++        close_conn();
+         exit(0);
+     }
+ 
+
+commit acdfe1a45dc65507a4eb6a4edad3b3ac8abf151f
+Author: Sailesh Mukil <smukil@netflix.com>
+Date:   Mon Dec 9 09:32:12 2019 -0800
+
+    Allow compilation with ASAN
+    
+    Compiling with ASAN can help find improper memory management by detecting
+    leaks, use after frees, double frees, buffer overflows, etc.
+    
+    It will profile the binary which has an effect on the binary size and
+    possibly a small impact on performance (although a lot better than valgrind).
+    
+    We can use this from GCC-4.8 onwards.
+    
+    To enable, during configure time, run:
+    ./configure --enable-asan
+    
+    Docs: https://github.com/google/sanitizers/wiki/AddressSanitizer
+    
+    Limitations (Pulled from Clang docs, but should be similar for GCC):
+    https://clang.llvm.org/docs/AddressSanitizer.html#limitations
+
+diff --git a/configure.ac b/configure.ac
+index fe8cbec..e1fa597 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -104,6 +104,9 @@ AC_ARG_ENABLE(tls,
+   [AS_HELP_STRING([--enable-tls], [Enable Transport Layer Security EXPERIMENTAL ])])
+ 
+ 
++AC_ARG_ENABLE(asan,
++  [AS_HELP_STRING([--enable-asan], [Compile with ASAN EXPERIMENTAL ])])
++
+ dnl **********************************************************************
+ dnl DETECT_SASL_CB_GETCONF
+ dnl
+@@ -199,12 +202,17 @@ if test "x$enable_arm_crc32" = "xyes"; then
+     AC_DEFINE([ARM_CRC32],1,[Set to nonzero if you want to enable ARMv8 crc32])
+ fi
+ 
++if test "x$enable_asan" = "xyes"; then
++    AC_DEFINE([ASAN],1,[Set to nonzero if you want to compile using ASAN])
++fi
++
+ AM_CONDITIONAL([BUILD_DTRACE],[test "$build_dtrace" = "yes"])
+ AM_CONDITIONAL([DTRACE_INSTRUMENT_OBJ],[test "$dtrace_instrument_obj" = "yes"])
+ AM_CONDITIONAL([ENABLE_SASL],[test "$enable_sasl" = "yes"])
+ AM_CONDITIONAL([ENABLE_EXTSTORE],[test "$enable_extstore" = "yes"])
+ AM_CONDITIONAL([ENABLE_ARM_CRC32],[test "$enable_arm_crc32" = "yes"])
+ AM_CONDITIONAL([ENABLE_TLS],[test "$enable_tls" = "yes"])
++AM_CONDITIONAL([ENABLE_ASAN],[test "$enable_asan" = "yes"])
+ 
+ 
+ AC_SUBST(DTRACE)
+@@ -760,6 +768,9 @@ elif test "$GCC" = "yes"
+ then
+   GCC_VERSION=`$CC -dumpversion`
+   CFLAGS="$CFLAGS -Wall -Werror -pedantic -Wmissing-prototypes -Wmissing-declarations -Wredundant-decls"
++  if test "x$enable_asan" = "xyes"; then
++    CFLAGS="$CFLAGS -fsanitize=address"
++  fi
+   case $GCC_VERSION in
+     4.4.*)
+     CFLAGS="$CFLAGS -fno-strict-aliasing"
+
+[ML] commit d4bed986e3dbb2402c47780020f27eb49c121084
+Author: David Carlier <dcarlier@afilias.info>
+Date:   Mon May 27 09:00:54 2019 +0000
+
+    memory leak and possible ptr dereference
+
+diff --git a/testapp.c b/testapp.c
+index 4b43036..755df27 100644
+--- a/testapp.c
++++ b/testapp.c
+@@ -519,6 +519,7 @@ static struct conn *connect_server(const char *hostname, in_port_t port,
+     if (!(c = (struct conn *)calloc(1, sizeof(struct conn)))) {
+         fprintf(stderr, "Failed to allocate the client connection: %s\n",
+                 strerror(errno));
++        return NULL;
+     }
+ 
+     struct addrinfo *ai = lookuphost(hostname, port);
+@@ -680,6 +681,7 @@ static enum test_return test_issue_92(void) {
+ 
+     close_conn();
+     con = connect_server("127.0.0.1", port, false, enable_ssl);
++    assert(con);
+ 
+     send_ascii_command("stats cachedump 1 0 0\r\n");
+ 
+@@ -692,6 +694,7 @@ static enum test_return test_issue_92(void) {
+ 
+     close_conn();
+     con = connect_server("127.0.0.1", port, false, enable_ssl);
++    assert(con);
+     return TEST_PASS;
+ }
+ 
+@@ -702,6 +705,7 @@ static enum test_return test_issue_102(void) {
+ 
+     close_conn();
+     con = connect_server("127.0.0.1", port, false, enable_ssl);
++    assert(con);
+ 
+     send_ascii_command(buffer);
+     /* verify that the server closed the connection */
+@@ -709,6 +713,7 @@ static enum test_return test_issue_102(void) {
+ 
+     close_conn();
+     con = connect_server("127.0.0.1", port, false, enable_ssl);
++    assert(con);
+ 
+     snprintf(buffer, sizeof(buffer), "gets ");
+     size_t offset = 5;
+@@ -741,6 +746,7 @@ static enum test_return test_issue_102(void) {
+ 
+     close_conn();
+     con = connect_server("127.0.0.1", port, false, enable_ssl);
++    assert(con);
+ 
+     return TEST_PASS;
+ }
+@@ -749,6 +755,7 @@ static enum test_return start_memcached_server(void) {
+     server_pid = start_server(&port, false, 600);
+     close_conn();
+     con = connect_server("127.0.0.1", port, false, enable_ssl);
++    assert(con);
+     return TEST_PASS;
+ }
+ 
+@@ -766,6 +773,7 @@ static enum test_return shutdown_memcached_server(void) {
+ 
+     close_conn();
+     con = connect_server("127.0.0.1", port, false, enable_ssl);
++    assert(con);
+ 
+     send_ascii_command("shutdown\r\n");
+     /* verify that the server closed the connection */
+@@ -1179,6 +1187,7 @@ static enum test_return test_binary_quit_impl(uint8_t cmd) {
+     assert(con->read(con, buffer.bytes, sizeof(buffer.bytes)) == 0);
+     close_conn();
+     con = connect_server("127.0.0.1", port, false, enable_ssl);
++    assert(con);
+ 
+     return TEST_PASS;
+ }
+@@ -1954,6 +1963,7 @@ static enum test_return test_binary_pipeline_hickup(void)
+     if ((ret = pthread_create(&tid, NULL,
+                               binary_hickup_recv_verification_thread, NULL)) != 0) {
+         fprintf(stderr, "Can't create thread: %s\n", strerror(ret));
++        free(buffer);
+         return TEST_FAIL;
+     }
+ 
+@@ -1995,6 +2005,7 @@ static enum test_return test_issue_101(void) {
+     for (ii = 0; ii < max; ++ii) {
+         conns[ii] = NULL;
+         conns[ii] = connect_server("127.0.0.1", port, true, enable_ssl);
++        assert(conns[ii]);
+         assert(conns[ii]->sock > 0);
+     }
+ 
+@@ -2030,6 +2041,7 @@ static enum test_return test_issue_101(void) {
+         assert(stat == 0);
+     } else {
+         con = connect_server("127.0.0.1", port, false, enable_ssl);
++        assert(con);
+         ret = test_binary_noop();
+         exit(0);
+     }
+
+[ML] commit f3aec0e5a520e3f513b6f341d4349e28b7aa82b3
+Author: David Carlier <dcarlier@afilias.info>
+Date:   Thu May 16 15:48:07 2019 +0000
+
+    Fix small memory leak in testapp.c.
+    
+    Only affects unit test application.
+
+diff --git a/testapp.c b/testapp.c
+index 96a4afb..4b43036 100644
+--- a/testapp.c
++++ b/testapp.c
+@@ -707,6 +707,7 @@ static enum test_return test_issue_102(void) {
+     /* verify that the server closed the connection */
+     assert(con->read(con, buffer, sizeof(buffer)) == 0);
+ 
++    close_conn();
+     con = connect_server("127.0.0.1", port, false, enable_ssl);
+ 
+     snprintf(buffer, sizeof(buffer), "gets ");
+
+[NR] [ML] commit 4f3d6d6f8ce3b595bbe9fbcce67603f7134def63
+Author: dormando <dormando@rydia.net>
+Date:   Mon Feb 19 16:23:11 2018 -0800
+
+    non-issue leak found via static analysis #2
+    
+    issue #338 reported a memory leak in the init code. another non-issue, since
+    it's a handful of bytes and that code path is only used in a couple of tests.
+
+diff --git a/memcached.c b/memcached.c
+index 8b38a91..004daeb 100644
+--- a/memcached.c
++++ b/memcached.c
+@@ -7717,8 +7717,9 @@ int main (int argc, char **argv) {
+         if (portnumber_file) {
+             fclose(portnumber_file);
+             rename(temp_portnumber_filename, portnumber_filename);
+-            free(temp_portnumber_filename);
+         }
++        if (temp_portnumber_filename)
++            free(temp_portnumber_filename);
+     }
+ 
+     /* Give the sockets a moment to open. I know this is dumb, but the error
+
+[NR] [ML]commit aef7ad5858488f7461a2cbc3f620b6189de1a938
+Author: dormando <dormando@rydia.net>
+Date:   Mon Feb 19 16:17:57 2018 -0800
+
+    non-issue leak found via static analysis
+    
+    issue #337 reported a memory leak, but in these cases the process exits anyway.
+
+diff --git a/memcached.c b/memcached.c
+index daa899a..8b38a91 100644
+--- a/memcached.c
++++ b/memcached.c
+@@ -5974,6 +5974,7 @@ static int server_sockets(int port, enum network_transport transport,
+                 char *e = strchr(p, ']');
+                 if (e == NULL) {
+                     fprintf(stderr, "Invalid IPV6 address: \"%s\"", p);
++                    free(list);
+                     return 1;
+                 }
+                 h = ++p; // skip the opening '['
+@@ -5992,6 +5993,7 @@ static int server_sockets(int port, enum network_transport transport,
+                     ++s;
+                     if (!safe_strtol(s, &the_port)) {
+                         fprintf(stderr, "Invalid port number: \"%s\"", s);
++                        free(list);
+                         return 1;
+                     }
+                 }
+

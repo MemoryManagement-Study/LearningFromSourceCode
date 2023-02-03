@@ -1,0 +1,4436 @@
+[ML] commit 066368e8373d18b496203fa91d98bf11a9b7f59f
+Author: Zhao Zhili <zhilizhao@tencent.com>
+Date:   Mon Jun 27 17:57:27 2022 +0800
+
+    avcodec/libdavs2: workaround memory leak
+    
+    davs2_decoder_close doesn't free those on the fly frames which
+    don't get output yet. It's a design bug, but easy to workaround.
+    
+    Before the patch:
+    Direct leak of 1198606 byte(s) in 2 object(s) allocated from:
+        #0 0x563af5e1e5f0 in malloc (ffmpeg+0x6675f0)
+        #1 0x563af9765ef3 in davs2_malloc davs2/source/common/common.h:1240
+        #2 0x563af9765ef3 in davs2_alloc_picture davs2/source/common/header.cc:815
+    
+    Indirect leak of 3595818 byte(s) in 6 object(s) allocated from:
+        #0 0x563af5e1e5f0 in malloc (ffmpeg+0x6675f0)
+        #1 0x563af9765ef3 in davs2_malloc davs2/source/common/common.h:1240
+        #2 0x563af9765ef3 in davs2_alloc_picture davs2/source/common/header.cc:815
+    
+    Signed-off-by: Zhao Zhili <zhilizhao@tencent.com>
+
+diff --git a/libavcodec/libdavs2.c b/libavcodec/libdavs2.c
+index d7625718a2..c2040775ae 100644
+--- a/libavcodec/libdavs2.c
++++ b/libavcodec/libdavs2.c
+@@ -177,6 +177,7 @@ static av_cold int davs2_end(AVCodecContext *avctx)
+ 
+     /* close the decoder */
+     if (cad->decoder) {
++        davs2_flush(avctx);
+         davs2_decoder_close(cad->decoder);
+         cad->decoder = NULL;
+     }
+
+[ML] commit 49838705a453bf6f65de8b4ca40ffe2d36d4f6e9
+Author: Andreas Rheinhardt <andreas.rheinhardt@outlook.com>
+Date:   Wed May 18 22:50:38 2022 +0200
+
+    avcodec/pthread_frame: Don't update the first thread ctx before freeing
+    
+    Currently, ff_frame_thread_free() uses the last worker thread
+    to updates the first worker thread via update_context_from_thread()
+    immediately before freeing all these worker threads. This is
+    a remnant of the time in which the first worker was special.
+    (E.g. the first worker shared its AVCodecInternal with the public
+    AVCodecContext.)
+    
+    But these times are over (none of the uses of is_copy matter
+    for ff_frame_thread_free()); nowadays the only thing that
+    update_context_from_thread() does is referencing a few
+    buffers/frames and replacing them with other references instead.
+    These new references will then be freed immediately thereafter
+    when the first worker thread is freed. Ensuring that the code is
+    free of double-frees is achieved by using reference-counted structures
+    (or in case of AVChannelLayouts: by giving each worker its own copy).
+    
+    Some archaeology:
+    a) Updating the first worker thread from the last one used
+    has been done since frame-threading was added in
+    37b00b47cbeecd66bb34c5c7c534d016d6e8da24.
+    b) The precursor to ff_mpv_common_end() checked for is_copy
+    before freeing pictures (i.e. it only freed them for the first
+    worker thread).
+    c) Commits c2dfb1e37cc72bf144545c4410a4621cbff5c4b1 and
+    e33811bd2686411233cb0eb4a4ee45eb99d7e736 modified the
+    update_thread_context function of the H.264 decoder
+    so that it could fail before calling ff_mpeg_update_thread_context().
+    d) This led to a double free/an assert violation with a H.264
+    sample for which ff_mpeg_update_thread_context() is not reached
+    for the final update_context_from_thread(). Commit
+    a6e4796fbf0aa9b13451a8ef917ecc4e80d1d272 added code to fix this
+    sample.
+    e) This issue was fixed (even with the last mentioned commit reverted)
+    when the H.264 decoder was deMpegEncContextized in commit
+    b7fe35c9e50e1701274364adf7280bf4a02b092b (merging commit
+    2c541554076cc8a72e7145d4da30389ca763f32f).
+    f) mpegvideo.c stopped using is_copy when it was switched to refcounted
+    frames in 759001c534287a96dc96d1e274665feb7059145d.
+    g) 1f4cf92cfbd3accbae582ac63126ed5570ddfd37 removed the init_thread_copy
+    callbacks; now no FFCodec.close callback checks for is_copy at all
+    any more.
+    
+    Signed-off-by: Andreas Rheinhardt <andreas.rheinhardt@outlook.com>
+
+diff --git a/libavcodec/pthread_frame.c b/libavcodec/pthread_frame.c
+index c667706206..8faea75a49 100644
+--- a/libavcodec/pthread_frame.c
++++ b/libavcodec/pthread_frame.c
+@@ -714,13 +714,6 @@ void ff_frame_thread_free(AVCodecContext *avctx, int thread_count)
+         }
+     }
+ 
+-    if (fctx->prev_thread && fctx->prev_thread != fctx->threads)
+-        if (update_context_from_thread(fctx->threads->avctx, fctx->prev_thread->avctx, 0) < 0) {
+-            av_log(avctx, AV_LOG_ERROR, "Final thread update failed\n");
+-            fctx->prev_thread->avctx->internal->is_copy = fctx->threads->avctx->internal->is_copy;
+-            fctx->threads->avctx->internal->is_copy = 1;
+-        }
+-
+     for (i = 0; i < thread_count; i++) {
+         PerThreadContext *p = &fctx->threads[i];
+         AVCodecContext *ctx = p->avctx;
+
+[ML] commit 4e6debe1df7d53f3f59b37449b82265d5c08a172
+Author: Andrey Volk <andywolk@gmail.com>
+Date:   Wed Mar 23 02:51:59 2022 +0300
+
+    avcodec/libwebpenc_animencoder: Fix memory leak of WebPData in libwebp_anim_encode_frame()
+    
+    Signed-off-by: Andrey Volk <andywolk@gmail.com>
+    Signed-off-by: Marton Balint <cus@passwd.hu>
+
+diff --git a/libavcodec/libwebpenc_animencoder.c b/libavcodec/libwebpenc_animencoder.c
+index c50c2a6a96..765fcf70d2 100644
+--- a/libavcodec/libwebpenc_animencoder.c
++++ b/libavcodec/libwebpenc_animencoder.c
+@@ -70,14 +70,18 @@ static int libwebp_anim_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
+             ret = WebPAnimEncoderAssemble(s->enc, &assembled_data);
+             if (ret) {
+                 ret = ff_get_encode_buffer(avctx, pkt, assembled_data.size, 0);
+-                if (ret < 0)
++                if (ret < 0) {
++                    WebPDataClear(&assembled_data);
+                     return ret;
++                }
+                 memcpy(pkt->data, assembled_data.bytes, assembled_data.size);
++                WebPDataClear(&assembled_data);
+                 s->done = 1;
+                 pkt->pts = pkt->dts = s->first_frame_pts;
+                 *got_packet = 1;
+                 return 0;
+             } else {
++                WebPDataClear(&assembled_data);
+                 av_log(s, AV_LOG_ERROR,
+                        "WebPAnimEncoderAssemble() failed with error: %d\n",
+                        VP8_ENC_ERROR_OUT_OF_MEMORY);
+
+[ML] commit 4a8b62c29a489b40c848714141b661733f585443
+Author: Paul B Mahol <onemda@gmail.com>
+Date:   Sat Mar 12 12:06:31 2022 +0100
+
+    avfilter/af_afftdn: fix small memory leak
+
+diff --git a/libavfilter/af_afftdn.c b/libavfilter/af_afftdn.c
+index 2c642f3ae3..79c29cdde5 100644
+--- a/libavfilter/af_afftdn.c
++++ b/libavfilter/af_afftdn.c
+@@ -536,14 +536,14 @@ static void set_band_parameters(AudioFFTDeNoiseContext *s,
+ static void read_custom_noise(AudioFFTDeNoiseContext *s, int ch)
+ {
+     DeNoiseChannel *dnch = &s->dnch[ch];
+-    char *p, *arg, *saveptr = NULL;
++    char *custom_noise_str, *p, *arg, *saveptr = NULL;
+     double band_noise[NB_PROFILE_BANDS] = { 0.f };
+     int ret;
+ 
+     if (!s->band_noise_str)
+         return;
+ 
+-    p = av_strdup(s->band_noise_str);
++    custom_noise_str = p = av_strdup(s->band_noise_str);
+     if (!p)
+         return;
+ 
+@@ -562,7 +562,7 @@ static void read_custom_noise(AudioFFTDeNoiseContext *s, int ch)
+         band_noise[i] = av_clipd(band_noise[i], -24., 24.);
+     }
+ 
+-    av_free(p);
++    av_free(custom_noise_str);
+     memcpy(dnch->band_noise, band_noise, sizeof(band_noise));
+ }
+ 
+
+[ML] commit ee88804d07c145bc7bca40c94bf6fd4cf71c06e4
+Author: James Almer <jamrial@gmail.com>
+Date:   Thu Mar 3 14:01:36 2022 -0300
+
+    avfilter/framepool: remove superfluous pallete buffer allocation
+    
+    av_image_fill_plane_sizes() already sets sizes[1] to AVPALETTE_SIZE.
+    Should fix memory leaks.
+    
+    Signed-off-by: James Almer <jamrial@gmail.com>
+
+diff --git a/libavfilter/framepool.c b/libavfilter/framepool.c
+index 96bfe46319..1990902666 100644
+--- a/libavfilter/framepool.c
++++ b/libavfilter/framepool.c
+@@ -56,13 +56,9 @@ FFFramePool *ff_frame_pool_video_init(AVBufferRef* (*alloc)(size_t size),
+ {
+     int i, ret;
+     FFFramePool *pool;
+-    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(format);
+     ptrdiff_t linesizes[4];
+     size_t sizes[4];
+ 
+-    if (!desc)
+-        return NULL;
+-
+     pool = av_mallocz(sizeof(FFFramePool));
+     if (!pool)
+         return NULL;
+@@ -108,12 +104,6 @@ FFFramePool *ff_frame_pool_video_init(AVBufferRef* (*alloc)(size_t size),
+             goto fail;
+     }
+ 
+-    if (desc->flags & AV_PIX_FMT_FLAG_PAL) {
+-        pool->pools[1] = av_buffer_pool_init(AVPALETTE_SIZE, alloc);
+-        if (!pool->pools[1])
+-            goto fail;
+-    }
+-
+     return pool;
+ 
+ fail:
+
+[ML] commit c4d63dbc9417ddf77f6e33f6144b23da7e97cb3b
+Author: Jiasheng Jiang <jiasheng@iscas.ac.cn>
+Date:   Mon Feb 7 11:44:53 2022 +0800
+
+    avcodec/vp6: return value check for av_mallocz
+    
+    As the potential failure of the av_mallocz(), the 's->alpha_context'
+    could be NULL and be dereferenced later.
+    Therefore, it should be better to check it and deal with it if fails
+    in order to prevent memory leak, same as the av_frame_alloc() in
+    ff_vp56_init().
+    
+    Fixes: 39a3894ad5 ("lavc/vp6: Implement "slice" threading for VP6A decode")
+    Reviewed-by: Peter Ross <pross@xvid.org>
+    Signed-off-by: Jiasheng Jiang <jiasheng@iscas.ac.cn>
+
+diff --git a/libavcodec/vp6.c b/libavcodec/vp6.c
+index d024370793..d75e717082 100644
+--- a/libavcodec/vp6.c
++++ b/libavcodec/vp6.c
+@@ -653,6 +653,10 @@ static av_cold int vp6_decode_init(AVCodecContext *avctx)
+ 
+     if (s->has_alpha) {
+         s->alpha_context = av_mallocz(sizeof(VP56Context));
++        if (!s->alpha_context) {
++            ff_vp56_free(avctx);
++            return AVERROR(ENOMEM);
++        }
+         ff_vp56_init_context(avctx, s->alpha_context,
+                              s->flip == -1, s->has_alpha);
+         ff_vp6dsp_init(&s->alpha_context->vp56dsp);
+
+[ML] commit 9bdb476c40372a2609219e649dcc037ee7c67963
+Author: Paul B Mahol <onemda@gmail.com>
+Date:   Thu Feb 10 09:18:36 2022 +0100
+
+    avfilter/vf_avgblur: fix memory leaks if config_input() is called again
+
+diff --git a/libavfilter/vf_avgblur.c b/libavfilter/vf_avgblur.c
+index e44b9f63c8..bd4471cb8e 100644
+--- a/libavfilter/vf_avgblur.c
++++ b/libavfilter/vf_avgblur.c
+@@ -187,12 +187,21 @@ static void build_lut(AVFilterContext *ctx, int max)
+     }
+ }
+ 
++static av_cold void uninit(AVFilterContext *ctx)
++{
++    AverageBlurContext *s = ctx->priv;
++
++    av_freep(&s->buffer);
++}
++
+ static int config_input(AVFilterLink *inlink)
+ {
+     AVFilterContext *ctx = inlink->dst;
+     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
+     AverageBlurContext *s = ctx->priv;
+ 
++    uninit(ctx);
++
+     s->depth = desc->comp[0].depth;
+     s->max = 1 << s->depth;
+     s->planewidth[1] = s->planewidth[2] = AV_CEIL_RSHIFT(inlink->w, desc->log2_chroma_w);
+@@ -316,13 +325,6 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
+     return 0;
+ }
+ 
+-static av_cold void uninit(AVFilterContext *ctx)
+-{
+-    AverageBlurContext *s = ctx->priv;
+-
+-    av_freep(&s->buffer);
+-}
+-
+ static const AVFilterPad avgblur_inputs[] = {
+     {
+         .name         = "default",
+
+[ML] commit 9809f318ea8812f4185b35d7c5a08899f35e0db0
+Author: Paul B Mahol <onemda@gmail.com>
+Date:   Thu Feb 10 09:10:35 2022 +0100
+
+    avfilter/vf_dblur: fix memory leaks if config_input() is called again
+
+diff --git a/libavfilter/vf_dblur.c b/libavfilter/vf_dblur.c
+index e821029906..05beb249b0 100644
+--- a/libavfilter/vf_dblur.c
++++ b/libavfilter/vf_dblur.c
+@@ -134,11 +134,20 @@ static const enum AVPixelFormat pix_fmts[] = {
+     AV_PIX_FMT_NONE
+ };
+ 
++static av_cold void uninit(AVFilterContext *ctx)
++{
++    DBlurContext *s = ctx->priv;
++
++    av_freep(&s->buffer);
++}
++
+ static int config_input(AVFilterLink *inlink)
+ {
+     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
+     DBlurContext *s = inlink->dst->priv;
+ 
++    uninit(inlink->dst);
++
+     s->depth = desc->comp[0].depth;
+     s->planewidth[1] = s->planewidth[2] = AV_CEIL_RSHIFT(inlink->w, desc->log2_chroma_w);
+     s->planewidth[0] = s->planewidth[3] = inlink->w;
+@@ -262,13 +271,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
+     return ff_filter_frame(outlink, out);
+ }
+ 
+-static av_cold void uninit(AVFilterContext *ctx)
+-{
+-    DBlurContext *s = ctx->priv;
+-
+-    av_freep(&s->buffer);
+-}
+-
+ static const AVFilterPad dblur_inputs[] = {
+     {
+         .name         = "default",
+
+[ML] commit f89cd457ca962c66b323f5a10912fc7e0ac8b3c2
+Author: Paul B Mahol <onemda@gmail.com>
+Date:   Thu Feb 10 09:06:22 2022 +0100
+
+    avfilter/vf_gblur: fix memory leaks if config_input() is called again
+
+diff --git a/libavfilter/vf_gblur.c b/libavfilter/vf_gblur.c
+index a775f8cbf8..fd664db057 100644
+--- a/libavfilter/vf_gblur.c
++++ b/libavfilter/vf_gblur.c
+@@ -249,11 +249,21 @@ void ff_gblur_init(GBlurContext *s)
+         ff_gblur_init_x86(s);
+ }
+ 
++static av_cold void uninit(AVFilterContext *ctx)
++{
++    GBlurContext *s = ctx->priv;
++
++    av_freep(&s->buffer);
++    av_freep(&s->localbuf);
++}
++
+ static int config_input(AVFilterLink *inlink)
+ {
+     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
+     GBlurContext *s = inlink->dst->priv;
+ 
++    uninit(inlink->dst);
++
+     s->depth = desc->comp[0].depth;
+     s->flt = !!(desc->flags & AV_PIX_FMT_FLAG_FLOAT);
+     s->planewidth[1] = s->planewidth[2] = AV_CEIL_RSHIFT(inlink->w, desc->log2_chroma_w);
+@@ -379,14 +389,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
+     return ff_filter_frame(outlink, out);
+ }
+ 
+-static av_cold void uninit(AVFilterContext *ctx)
+-{
+-    GBlurContext *s = ctx->priv;
+-
+-    av_freep(&s->buffer);
+-    av_freep(&s->localbuf);
+-}
+-
+ static const AVFilterPad gblur_inputs[] = {
+     {
+         .name         = "default",
+
+[ML] commit 05ba0ffca9b4c28e08fdd8086218c0075537125c
+Author: Wenbin Chen <wenbin.chen-at-intel.com@ffmpeg.org>
+Date:   Thu Jan 20 15:13:43 2022 +0800
+
+    libavcodec/qsvenc: fix a memory leak problem
+    
+    "qf->frame" ref to input frame but it isn't released. av_frame_unref()
+    is added before refering qf->frame to new frame to make sure the previous
+    reference is released.
+    
+    Reported-by: Mark Samuelson <Mark.Samuelson@sonicfoundry.com>
+    Signed-off-by: Wenbin Chen <wenbin.chen@intel.com>
+    Signed-off-by: Haihao Xiang <haihao.xiang@intel.com>
+
+diff --git a/libavcodec/qsvenc.c b/libavcodec/qsvenc.c
+index 413e5ae8f6..acb82f321c 100644
+--- a/libavcodec/qsvenc.c
++++ b/libavcodec/qsvenc.c
+@@ -1575,6 +1575,7 @@ static int submit_frame(QSVEncContext *q, const AVFrame *frame,
+                 return ret;
+             }
+         } else {
++            av_frame_unref(qf->frame);
+             ret = av_frame_ref(qf->frame, frame);
+             if (ret < 0)
+                 return ret;
+
+[DF] commit 3f46ffe956a563a975b65fcb0bcf131fd30956ff
+Author: Steven Liu <liuqi05@kuaishou.com>
+Date:   Wed Dec 1 11:19:47 2021 +0800
+
+    avformat/aviobuf: fix double free by return early on error
+    
+    Because the s->buffer has been freed by av_freep in avio_closep.
+    It should not av_freep the buffer in label fail after avio_closep.
+    Then just move the av_freep before avio_closep and remove the label fail.
+    
+    Reported-by: TOTE Robot <oslab@tsinghua.edu.cn>
+    Reviewed-by: Zhao Zhili <zhilizhao@tencent.com>
+    Signed-off-by: Steven Liu <liuqi05@kuaishou.com>
+
+diff --git a/libavformat/aviobuf.c b/libavformat/aviobuf.c
+index 969c127b23..14d4b8f240 100644
+--- a/libavformat/aviobuf.c
++++ b/libavformat/aviobuf.c
+@@ -977,18 +977,19 @@ int ffio_fdopen(AVIOContext **s, URLContext *h)
+                             (int (*)(void *, uint8_t *, int))  ffurl_read,
+                             (int (*)(void *, uint8_t *, int))  ffurl_write,
+                             (int64_t (*)(void *, int64_t, int))ffurl_seek);
+-    if (!*s)
+-        goto fail;
+-
++    if (!*s) {
++        av_freep(&buffer);
++        return AVERROR(ENOMEM);
++    }
+     (*s)->protocol_whitelist = av_strdup(h->protocol_whitelist);
+     if (!(*s)->protocol_whitelist && h->protocol_whitelist) {
+         avio_closep(s);
+-        goto fail;
++        return AVERROR(ENOMEM);
+     }
+     (*s)->protocol_blacklist = av_strdup(h->protocol_blacklist);
+     if (!(*s)->protocol_blacklist && h->protocol_blacklist) {
+         avio_closep(s);
+-        goto fail;
++        return AVERROR(ENOMEM);
+     }
+     (*s)->direct = h->flags & AVIO_FLAG_DIRECT;
+ 
+@@ -1006,9 +1007,6 @@ int ffio_fdopen(AVIOContext **s, URLContext *h)
+     ((FFIOContext*)(*s))->short_seek_get = (int (*)(void *))ffurl_get_short_seek;
+     (*s)->av_class = &ff_avio_class;
+     return 0;
+-fail:
+-    av_freep(&buffer);
+-    return AVERROR(ENOMEM);
+ }
+ 
+ URLContext* ffio_geturlcontext(AVIOContext *s)
+
+[ML] commit e95969c07e9eb83bacf7ffebbdbe2687879bf5b1
+Author: Wu Jianhua <jianhua.wu@intel.com>
+Date:   Wed Nov 17 11:04:15 2021 +0800
+
+    avfilter/gblur_vulkan: fix memory leak
+    
+    Whether failed or not, the block of codes labeled with fail should
+    be always run to ensure the av_free(kernel_def) is executed.
+    
+    Signed-off-by: Wu Jianhua <jianhua.wu@intel.com>
+
+diff --git a/libavfilter/vf_gblur_vulkan.c b/libavfilter/vf_gblur_vulkan.c
+index b9e2c4fbc7..d4f391b25d 100644
+--- a/libavfilter/vf_gblur_vulkan.c
++++ b/libavfilter/vf_gblur_vulkan.c
+@@ -296,8 +296,6 @@ static av_cold int init_filter(AVFilterContext *ctx, AVFrame *in)
+ 
+     s->initialized = 1;
+ 
+-    return 0;
+-
+ fail:
+     av_free(kernel_def);
+     return err;
+
+[ML] commit f388791ff99938396d622886e8ff760e0f398028
+Author: Lynne <dev@lynne.ee>
+Date:   Sat Nov 13 14:47:12 2021 +0100
+
+    hwcontext_vulkan: fix small memory leak when unmapping
+
+diff --git a/libavutil/hwcontext_vulkan.c b/libavutil/hwcontext_vulkan.c
+index e54c10156e..7c70fac30f 100644
+--- a/libavutil/hwcontext_vulkan.c
++++ b/libavutil/hwcontext_vulkan.c
+@@ -2235,6 +2235,7 @@ static void vulkan_unmap_from(AVHWFramesContext *hwfc, HWMapDescriptor *hwmap)
+     }
+ 
+     av_freep(&map->frame);
++    av_free(map);
+ }
+ 
+ static const struct {
+
+[ML] commit 8a969e1280aa7aef31de6bd3db5ce46dc123fde0
+Author: songyutong <songyutong@kuaishou.com>
+Date:   Tue Nov 9 18:51:58 2021 +0800
+
+    avcodec/videotoolboxenc: fix pixel buffer memory leak
+    
+    In function vtenc_populate_extradata(), there is a manually created
+    pixel buffer that has not been released. So we should use CVPixelBufferRelease
+    to release this pixel buffer at the end, otherwise will cause a memory leak.
+    
+    Signed-off-by: Rick Kern <kernrj@gmail.com>
+
+diff --git a/libavcodec/videotoolboxenc.c b/libavcodec/videotoolboxenc.c
+index bac36fda90..ebaa3ebdc8 100644
+--- a/libavcodec/videotoolboxenc.c
++++ b/libavcodec/videotoolboxenc.c
+@@ -2554,6 +2554,7 @@ static int vtenc_populate_extradata(AVCodecContext   *avctx,
+ 
+ 
+ pe_cleanup:
++    CVPixelBufferRelease(pix_buf);
+     if(vtctx->session)
+         CFRelease(vtctx->session);
+ 
+
+[ML] commit ad06929d8d95542e661a337423f457f5692e6b3b
+Author: Robert Bengtsson-Ãlund <robert.bengtsson-olund@intinor.se>
+Date:   Tue Jun 1 18:50:51 2021 +0200
+
+    avformat/http: Stop cookie_dict leaking on errors.
+    
+    This solves the memory leak reported in https://trac.ffmpeg.org/ticket/9273
+    
+    Signed-off-by: Robert Bengtsson-Ãlund <robert.bengtsson-olund@intinor.se>
+
+diff --git a/libavformat/http.c b/libavformat/http.c
+index 1fc95c768c..476b9a8456 100644
+--- a/libavformat/http.c
++++ b/libavformat/http.c
+@@ -605,6 +605,7 @@ static int http_listen(URLContext *h, const char *uri, int flags,
+     }
+ fail:
+     av_dict_free(&s->chained_options);
++    av_dict_free(&s->cookie_dict);
+     return ret;
+ }
+ 
+@@ -645,8 +646,10 @@ static int http_open(URLContext *h, const char *uri, int flags,
+     }
+     ret = http_open_cnx(h, options);
+ bail_out:
+-    if (ret < 0)
++    if (ret < 0) {
+         av_dict_free(&s->chained_options);
++        av_dict_free(&s->cookie_dict);
++    }
+     return ret;
+ }
+ 
+@@ -1763,6 +1766,7 @@ static int http_close(URLContext *h)
+     if (s->hd)
+         ffurl_closep(&s->hd);
+     av_dict_free(&s->chained_options);
++    av_dict_free(&s->cookie_dict);
+     return ret;
+ }
+ 
+
+[ML] commit 2df963b5fa6784ac6f1413c9b1706c20da66e8df
+Author: Shubhanshu Saxena <shubhanshu.e01@gmail.com>
+Date:   Mon Jun 14 23:26:16 2021 +0530
+
+    lavfi/dnn_backend_openvino.c: Fix Memory Leak for RequestItem
+    
+    Fix memory leak for RequestItem upon error while pushing to the
+    request_queue in the completion callback.
+    
+    Signed-off-by: Shubhanshu Saxena <shubhanshu.e01@gmail.com>
+
+diff --git a/libavfilter/dnn/dnn_backend_openvino.c b/libavfilter/dnn/dnn_backend_openvino.c
+index 709a772a4d..702c4fb9ee 100644
+--- a/libavfilter/dnn/dnn_backend_openvino.c
++++ b/libavfilter/dnn/dnn_backend_openvino.c
+@@ -293,6 +293,8 @@ static void infer_completion_callback(void *args)
+ 
+     request->inference_count = 0;
+     if (ff_safe_queue_push_back(requestq, request) < 0) {
++        ie_infer_request_free(&request->infer_request);
++        av_freep(&request);
+         av_log(ctx, AV_LOG_ERROR, "Failed to push back request_queue.\n");
+         return;
+     }
+
+[ML] commit bc04ea39a57a22dd4d26946a83e166f090218054
+Author: Vadym Bezdushnyi <vadim.bezdush@gmail.com>
+Date:   Sun Jan 31 16:52:45 2021 +0200
+
+    avformat/movenccenc: Fix memory leak for muxing CENC-encrypted files
+    
+    Memory for auxillary_info was not freed after usage.
+    
+    Leak can be reproduced with following commands:
+    
+    Optionally, generate input video:
+    ffmpeg -f lavfi -i testsrc=duration=10:size=1280x720:rate=30 input.mp4
+    
+    Run ffmpeg with valgrind:
+    valgrind --leak-check=full --show-leak-kinds=all \
+    ffmpeg -y -i input.mp4 -vcodec copy -acodec copy \
+    -encryption_scheme cenc-aes-ctr \
+    -encryption_key 00000000000000000000000000000000 \
+    -encryption_kid 00000000000000000000000000000000 \
+    ffmpeg_encrypted.mp4
+    
+    For test video which has duration of 10 sec, leak is 4 Kb.
+    For 100 sec video, leak will be 33 Kb. Most likely,
+    leaked memory will grow linearly to the number of input frames.
+    
+    Signed-off-by: Vadym Bezdushnyi <vadim.bezdush@gmail.com>
+    Signed-off-by: Marton Balint <cus@passwd.hu>
+
+diff --git a/libavformat/movenccenc.c b/libavformat/movenccenc.c
+index b91294f706..74f3c4ccfb 100644
+--- a/libavformat/movenccenc.c
++++ b/libavformat/movenccenc.c
+@@ -412,4 +412,6 @@ int ff_mov_cenc_init(MOVMuxCencContext* ctx, uint8_t* encryption_key,
+ void ff_mov_cenc_free(MOVMuxCencContext* ctx)
+ {
+     av_aes_ctr_free(ctx->aes_ctr);
++    av_freep(&ctx->auxiliary_info);
++    av_freep(&ctx->auxiliary_info_sizes);
+ }
+
+[ML] commit 4c47b41782e9f8f875b1f7a791d53f5cbc933e63
+Author: Xu Guangxin <guangxin.xu@intel.com>
+Date:   Tue Jan 5 10:43:37 2021 +0800
+
+    avcodec/qsv_h2645: fix memory leak for plugin load
+    
+    Signed-off-by: Xu Guangxin <guangxin.xu@intel.com>
+    Signed-off-by: Linjie Fu <linjie.justin.fu@gmail.com>
+
+diff --git a/libavcodec/qsvdec_h2645.c b/libavcodec/qsvdec_h2645.c
+index 02c41883b6..3d6e85230f 100644
+--- a/libavcodec/qsvdec_h2645.c
++++ b/libavcodec/qsvdec_h2645.c
+@@ -69,6 +69,8 @@ static av_cold int qsv_decode_close(AVCodecContext *avctx)
+ {
+     QSVH2645Context *s = avctx->priv_data;
+ 
++    av_freep(&s->qsv.load_plugins);
++
+     ff_qsv_decode_close(&s->qsv);
+ 
+     qsv_clear_buffers(s);
+
+[ML] commit 7b274a9b89eb07cdf0a59d264f66ceae578b9a97
+Author: Lynne <dev@lynne.ee>
+Date:   Wed Nov 25 12:06:00 2020 +0100
+
+    hwcontext_vulkan: do not segfault when failing to init a AVHWFramesContext
+    
+    frames_uninit is always called on failure, and the free_exec_ctx function
+    did not zero the pool when freeing it, so it resulted in a double free.
+
+diff --git a/libavutil/hwcontext_vulkan.c b/libavutil/hwcontext_vulkan.c
+index 29928052db..f1ee9693e1 100644
+--- a/libavutil/hwcontext_vulkan.c
++++ b/libavutil/hwcontext_vulkan.c
+@@ -752,14 +752,6 @@ static int create_exec_ctx(AVHWFramesContext *hwfc, VulkanExecCtx *cmd,
+ 
+     cmd->nb_queues = num_queues;
+ 
+-    cmd->queues = av_mallocz(num_queues * sizeof(*cmd->queues));
+-    if (!cmd->queues)
+-        return AVERROR(ENOMEM);
+-
+-    cmd->bufs = av_mallocz(num_queues * sizeof(*cmd->bufs));
+-    if (!cmd->bufs)
+-        return AVERROR(ENOMEM);
+-
+     /* Create command pool */
+     ret = vkCreateCommandPool(hwctx->act_dev, &cqueue_create,
+                               hwctx->alloc, &cmd->pool);
+@@ -769,6 +761,10 @@ static int create_exec_ctx(AVHWFramesContext *hwfc, VulkanExecCtx *cmd,
+         return AVERROR_EXTERNAL;
+     }
+ 
++    cmd->bufs = av_mallocz(num_queues * sizeof(*cmd->bufs));
++    if (!cmd->bufs)
++        return AVERROR(ENOMEM);
++
+     cbuf_create.commandPool = cmd->pool;
+ 
+     /* Allocate command buffer */
+@@ -776,9 +772,14 @@ static int create_exec_ctx(AVHWFramesContext *hwfc, VulkanExecCtx *cmd,
+     if (ret != VK_SUCCESS) {
+         av_log(hwfc, AV_LOG_ERROR, "Command buffer alloc failure: %s\n",
+                vk_ret2str(ret));
++        av_freep(&cmd->bufs);
+         return AVERROR_EXTERNAL;
+     }
+ 
++    cmd->queues = av_mallocz(num_queues * sizeof(*cmd->queues));
++    if (!cmd->queues)
++        return AVERROR(ENOMEM);
++
+     for (int i = 0; i < num_queues; i++) {
+         VulkanQueueCtx *q = &cmd->queues[i];
+         vkGetDeviceQueue(hwctx->act_dev, queue_family_index, i, &q->queue);
+@@ -792,23 +793,25 @@ static void free_exec_ctx(AVHWFramesContext *hwfc, VulkanExecCtx *cmd)
+ {
+     AVVulkanDeviceContext *hwctx = hwfc->device_ctx->hwctx;
+ 
+-    /* Make sure all queues have finished executing */
+-    for (int i = 0; i < cmd->nb_queues; i++) {
+-        VulkanQueueCtx *q = &cmd->queues[i];
++    if (cmd->queues) {
++        for (int i = 0; i < cmd->nb_queues; i++) {
++            VulkanQueueCtx *q = &cmd->queues[i];
+ 
+-        if (q->fence && !q->was_synchronous) {
+-            vkWaitForFences(hwctx->act_dev, 1, &q->fence, VK_TRUE, UINT64_MAX);
+-            vkResetFences(hwctx->act_dev, 1, &q->fence);
+-        }
++            /* Make sure all queues have finished executing */
++            if (q->fence && !q->was_synchronous) {
++                vkWaitForFences(hwctx->act_dev, 1, &q->fence, VK_TRUE, UINT64_MAX);
++                vkResetFences(hwctx->act_dev, 1, &q->fence);
++            }
+ 
+-        /* Free the fence */
+-        if (q->fence)
+-            vkDestroyFence(hwctx->act_dev, q->fence, hwctx->alloc);
++            /* Free the fence */
++            if (q->fence)
++                vkDestroyFence(hwctx->act_dev, q->fence, hwctx->alloc);
+ 
+-        /* Free buffer dependencies */
+-        for (int j = 0; j < q->nb_buf_deps; j++)
+-            av_buffer_unref(&q->buf_deps[j]);
+-        av_free(q->buf_deps);
++            /* Free buffer dependencies */
++            for (int j = 0; j < q->nb_buf_deps; j++)
++                av_buffer_unref(&q->buf_deps[j]);
++            av_free(q->buf_deps);
++        }
+     }
+ 
+     if (cmd->bufs)
+@@ -816,8 +819,9 @@ static void free_exec_ctx(AVHWFramesContext *hwfc, VulkanExecCtx *cmd)
+     if (cmd->pool)
+         vkDestroyCommandPool(hwctx->act_dev, cmd->pool, hwctx->alloc);
+ 
+-    av_freep(&cmd->bufs);
+     av_freep(&cmd->queues);
++    av_freep(&cmd->bufs);
++    cmd->pool = NULL;
+ }
+ 
+ static VkCommandBuffer get_buf_exec_ctx(AVHWFramesContext *hwfc, VulkanExecCtx *cmd)
+@@ -1719,24 +1723,24 @@ static int vulkan_frames_init(AVHWFramesContext *hwfc)
+                           dev_hwctx->queue_family_comp_index,
+                           GET_QUEUE_COUNT(dev_hwctx, 0, 1, 0));
+     if (err)
+-        goto fail;
++        return err;
+ 
+     err = create_exec_ctx(hwfc, &fp->upload_ctx,
+                           dev_hwctx->queue_family_tx_index,
+                           GET_QUEUE_COUNT(dev_hwctx, 0, 0, 1));
+     if (err)
+-        goto fail;
++        return err;
+ 
+     err = create_exec_ctx(hwfc, &fp->download_ctx,
+                           dev_hwctx->queue_family_tx_index, 1);
+     if (err)
+-        goto fail;
++        return err;
+ 
+     /* Test to see if allocation will fail */
+     err = create_frame(hwfc, &f, hwctx->tiling, hwctx->usage,
+                        hwctx->create_pnext);
+     if (err)
+-        goto fail;
++        return err;
+ 
+     vulkan_frame_free(hwfc, (uint8_t *)f);
+ 
+@@ -1746,20 +1750,11 @@ static int vulkan_frames_init(AVHWFramesContext *hwfc)
+         hwfc->internal->pool_internal = av_buffer_pool_init2(sizeof(AVVkFrame),
+                                                              hwfc, vulkan_pool_alloc,
+                                                              NULL);
+-        if (!hwfc->internal->pool_internal) {
+-            err = AVERROR(ENOMEM);
+-            goto fail;
+-        }
++        if (!hwfc->internal->pool_internal)
++            return AVERROR(ENOMEM);
+     }
+ 
+     return 0;
+-
+-fail:
+-    free_exec_ctx(hwfc, &fp->conv_ctx);
+-    free_exec_ctx(hwfc, &fp->upload_ctx);
+-    free_exec_ctx(hwfc, &fp->download_ctx);
+-
+-    return err;
+ }
+ 
+ static int vulkan_get_buffer(AVHWFramesContext *hwfc, AVFrame *frame)
+
+[DF] commit e09e2c6442924bfa1fb5efc419bc27fc6ef8a532
+Author: Andreas Rheinhardt <andreas.rheinhardt@gmail.com>
+Date:   Mon Sep 7 18:41:51 2020 +0200
+
+    avformat/dashdec: Avoid double free on error
+    
+    When using one of the AV_DICT_DONT_STRDUP_KEY/VAL flags, av_dict_set()
+    already frees the key/value on error, so that freeing it again would
+    lead to a double free.
+    
+    Reviewed-by: Steven Liu <lq@chinaffmpeg.org>
+    Signed-off-by: Andreas Rheinhardt <andreas.rheinhardt@gmail.com>
+
+diff --git a/libavformat/dashdec.c b/libavformat/dashdec.c
+index 1e9985f32c..4048323c7d 100644
+--- a/libavformat/dashdec.c
++++ b/libavformat/dashdec.c
+@@ -1869,10 +1869,8 @@ static int save_avio_options(AVFormatContext *s)
+         if (av_opt_get(s->pb, *opt, AV_OPT_SEARCH_CHILDREN, &buf) >= 0) {
+             if (buf[0] != '\0') {
+                 ret = av_dict_set(&c->avio_opts, *opt, buf, AV_DICT_DONT_STRDUP_VAL);
+-                if (ret < 0) {
+-                    av_freep(&buf);
++                if (ret < 0)
+                     return ret;
+-                }
+             } else {
+                 av_freep(&buf);
+             }
+
+[DF] commit 2a471af50aab02e8bb062c84a5779c7de1952fc0
+Author: Andreas Rheinhardt <andreas.rheinhardt@gmail.com>
+Date:   Fri Aug 7 19:43:20 2020 +0200
+
+    avfilter/formats: Fix double frees and memleaks on error
+    
+    The formats API deals with lists of channel layouts, sample rates,
+    pixel formats and sample formats. These lists are refcounted in a way in
+    which the list structure itself contains pointers to all of its owners.
+    Furthermore, it is possible for a list to be not owned by anyone yet;
+    this status is temporary until the list has been attached to an owner.
+    Adding an owner to a list involves reallocating the list's list of
+    owners and can therefore fail.
+    
+    In order to reduce the amount of checks and cleanup code for the users
+    of this API, the API is supposed to be lenient when faced with input
+    lists that are NULL and it is supposed to clean up if adding an owner
+    to a list fails, so that a simple use case like
+    
+    list = ff_make_format_list(foo_fmts);
+    if ((ret = ff_formats_ref(list, &ctx->inputs[0]->out_formats)) < 0)
+        return ret;
+    
+    needn't check whether list could be successfully allocated
+    (ff_formats_ref() return AVERROR(ENOMEM) if it couldn't) and it also
+    needn't free list if ff_formats_ref() couldn't add an owner for it.
+    
+    But the cleaning up after itself was broken. The root cause was that
+    the refcount was decremented during unreferencing whether or not the
+    element to be unreferenced was actually an owner of the list or not.
+    This means that if the above sample code is continued by
+    
+    if ((ret = ff_formats_ref(list, &ctx->inputs[1]->out_formats)) < 0)
+        return ret;
+    
+    and that if an error happens at the second ff_formats_ref() call, the
+    automatic cleaning of list will decrement the refcount from 1 (the sole
+    owner of list at this moment is ctx->input[0]->out_formats) to 0 and so
+    the list will be freed; yet ctx->input[0]->out_formats still points to
+    the list and this will lead to a double free/use-after-free when
+    ctx->input[0] is freed later.
+    
+    Presumably in order to work around such an issue, commit
+    93afb338a405eac0f9e7b092bc26603378bfcca6 restricted unreferencing to
+    lists with owners. This does not solve the root cause (the above example
+    is not fixed by this) at all, but it solves some crashs.
+    
+    This commit fixes the API: The list's refcount is only decremented if
+    an owner is removed from the list of owners and not if the
+    unref-function is called with a pointer that is not among the owners of
+    the list. Furtermore, the requirement for the list to have owners is
+    dropped.
+    
+    This implies that if the first call to ff_formats_ref() in the above
+    example fails, the refcount which is initially zero during unreferencing
+    is not modified, so that the list will be freed automatically in said
+    call to ff_formats_ref() as every list whose refcount reaches zero is.
+    
+    If on the other hand, the second call to ff_formats_ref() is the first
+    to fail, the refcount would stay at one during the automatic
+    unreferencing in ff_formats_ref(). The list would later be freed when
+    its last (and in this case sole) owner (namely
+    ctx->inputs[0]->out_formats) gets unreferenced.
+    
+    The issues described here for ff_formats_ref() also affected the other
+    functions of this API. E.g. ff_add_format() failed to clean up after
+    itself if adding an entry to an already existing list failed (the case
+    of a freshly allocated list was handled specially and this commit also
+    removes said code). E.g. ff_all_formats() inherited the flaw.
+    
+    Reviewed-by: Nicolas George <george@nsup.org>
+    Signed-off-by: Andreas Rheinhardt <andreas.rheinhardt@gmail.com>
+
+diff --git a/libavfilter/formats.c b/libavfilter/formats.c
+index d2edf832e9..7410a306f2 100644
+--- a/libavfilter/formats.c
++++ b/libavfilter/formats.c
+@@ -314,7 +314,6 @@ AVFilterChannelLayouts *avfilter_make_format64_list(const int64_t *fmts)
+ #define ADD_FORMAT(f, fmt, unref_fn, type, list, nb)        \
+ do {                                                        \
+     type *fmts;                                             \
+-    void *oldf = *f;                                        \
+                                                             \
+     if (!(*f) && !(*f = av_mallocz(sizeof(**f)))) {         \
+         return AVERROR(ENOMEM);                             \
+@@ -324,8 +323,6 @@ do {                                                        \
+                             sizeof(*(*f)->list));           \
+     if (!fmts) {                                            \
+         unref_fn(f);                                        \
+-        if (!oldf)                                          \
+-            av_freep(f);                                    \
+         return AVERROR(ENOMEM);                             \
+     }                                                       \
+                                                             \
+@@ -486,16 +483,17 @@ do {                                        \
+ do {                                                               \
+     int idx = -1;                                                  \
+                                                                    \
+-    if (!ref || !*ref || !(*ref)->refs)                            \
++    if (!ref || !*ref)                                             \
+         return;                                                    \
+                                                                    \
+     FIND_REF_INDEX(ref, idx);                                      \
+                                                                    \
+-    if (idx >= 0)                                                  \
++    if (idx >= 0) {                                                \
+         memmove((*ref)->refs + idx, (*ref)->refs + idx + 1,        \
+             sizeof(*(*ref)->refs) * ((*ref)->refcount - idx - 1)); \
+-                                                                   \
+-    if(!--(*ref)->refcount) {                                      \
++        --(*ref)->refcount;                                        \
++    }                                                              \
++    if (!(*ref)->refcount) {                                       \
+         av_free((*ref)->list);                                     \
+         av_free((*ref)->refs);                                     \
+         av_free(*ref);                                             \
+@@ -537,7 +535,7 @@ void ff_formats_changeref(AVFilterFormats **oldref, AVFilterFormats **newref)
+     FORMATS_CHANGEREF(oldref, newref);
+ }
+ 
+-#define SET_COMMON_FORMATS(ctx, fmts, in_fmts, out_fmts, ref_fn, unref_fn, list) \
++#define SET_COMMON_FORMATS(ctx, fmts, in_fmts, out_fmts, ref_fn, unref_fn) \
+     int count = 0, i;                                               \
+                                                                     \
+     if (!fmts)                                                      \
+@@ -547,10 +545,6 @@ void ff_formats_changeref(AVFilterFormats **oldref, AVFilterFormats **newref)
+         if (ctx->inputs[i] && !ctx->inputs[i]->out_fmts) {          \
+             int ret = ref_fn(fmts, &ctx->inputs[i]->out_fmts);      \
+             if (ret < 0) {                                          \
+-                unref_fn(&fmts);                                    \
+-                if (fmts)                                           \
+-                    av_freep(&fmts->list);                          \
+-                av_freep(&fmts);                                    \
+                 return ret;                                         \
+             }                                                       \
+             count++;                                                \
+@@ -560,10 +554,6 @@ void ff_formats_changeref(AVFilterFormats **oldref, AVFilterFormats **newref)
+         if (ctx->outputs[i] && !ctx->outputs[i]->in_fmts) {         \
+             int ret = ref_fn(fmts, &ctx->outputs[i]->in_fmts);      \
+             if (ret < 0) {                                          \
+-                unref_fn(&fmts);                                    \
+-                if (fmts)                                           \
+-                    av_freep(&fmts->list);                          \
+-                av_freep(&fmts);                                    \
+                 return ret;                                         \
+             }                                                       \
+             count++;                                                \
+@@ -571,9 +561,7 @@ void ff_formats_changeref(AVFilterFormats **oldref, AVFilterFormats **newref)
+     }                                                               \
+                                                                     \
+     if (!count) {                                                   \
+-        av_freep(&fmts->list);                                      \
+-        av_freep(&fmts->refs);                                      \
+-        av_freep(&fmts);                                            \
++        unref_fn(&fmts);                                            \
+     }                                                               \
+                                                                     \
+     return 0;
+@@ -582,14 +570,14 @@ int ff_set_common_channel_layouts(AVFilterContext *ctx,
+                                   AVFilterChannelLayouts *layouts)
+ {
+     SET_COMMON_FORMATS(ctx, layouts, in_channel_layouts, out_channel_layouts,
+-                       ff_channel_layouts_ref, ff_channel_layouts_unref, channel_layouts);
++                       ff_channel_layouts_ref, ff_channel_layouts_unref);
+ }
+ 
+ int ff_set_common_samplerates(AVFilterContext *ctx,
+                               AVFilterFormats *samplerates)
+ {
+     SET_COMMON_FORMATS(ctx, samplerates, in_samplerates, out_samplerates,
+-                       ff_formats_ref, ff_formats_unref, formats);
++                       ff_formats_ref, ff_formats_unref);
+ }
+ 
+ /**
+@@ -600,7 +588,7 @@ int ff_set_common_samplerates(AVFilterContext *ctx,
+ int ff_set_common_formats(AVFilterContext *ctx, AVFilterFormats *formats)
+ {
+     SET_COMMON_FORMATS(ctx, formats, in_formats, out_formats,
+-                       ff_formats_ref, ff_formats_unref, formats);
++                       ff_formats_ref, ff_formats_unref);
+ }
+ 
+ int ff_default_query_formats(AVFilterContext *ctx)
+
+[DF] commit a9fecb8ea181d285a3218e27c97e5857925731d8
+Author: Andriy Gelman <andriy.gelman@gmail.com>
+Date:   Thu Jul 16 10:52:12 2020 -0400
+
+    avcodec/v4l2_m2m_dec: remove redundant packet and fix double free
+    
+    v4l2_receive_frame() uses two packets s->buf_pkt and avpkt. If avpkt
+    cannot be enqueued, the packet is buffered in s->buf_pkt and enqueued in
+    the next call. Currently the ownership transfer between the two packets
+    is not properly handled. A double free occurs if
+    ff_v4l2_context_enqueue_packet() returns EAGAIN and v4l2_try_start
+    returns EINVAL.
+    
+    In fact, having two AVPackets is not needed and everything can be
+    handled by s->buf_pkt.
+    
+    This commit removes the local avpkt from v4l2_receive_frame(), meaning
+    that the ownership transfer doesn't need to be handled and the double
+    free is fixed.
+    
+    Signed-off-by: Andriy Gelman <andriy.gelman@gmail.com>
+
+diff --git a/libavcodec/v4l2_m2m_dec.c b/libavcodec/v4l2_m2m_dec.c
+index 3e17e0fcac..b038efed9c 100644
+--- a/libavcodec/v4l2_m2m_dec.c
++++ b/libavcodec/v4l2_m2m_dec.c
+@@ -138,14 +138,10 @@ static int v4l2_receive_frame(AVCodecContext *avctx, AVFrame *frame)
+     V4L2m2mContext *s = ((V4L2m2mPriv*)avctx->priv_data)->context;
+     V4L2Context *const capture = &s->capture;
+     V4L2Context *const output = &s->output;
+-    AVPacket avpkt = {0};
+     int ret;
+ 
+-    if (s->buf_pkt.size) {
+-        avpkt = s->buf_pkt;
+-        memset(&s->buf_pkt, 0, sizeof(AVPacket));
+-    } else {
+-        ret = ff_decode_get_packet(avctx, &avpkt);
++    if (!s->buf_pkt.size) {
++        ret = ff_decode_get_packet(avctx, &s->buf_pkt);
+         if (ret < 0 && ret != AVERROR_EOF)
+             return ret;
+     }
+@@ -153,32 +149,29 @@ static int v4l2_receive_frame(AVCodecContext *avctx, AVFrame *frame)
+     if (s->draining)
+         goto dequeue;
+ 
+-    ret = ff_v4l2_context_enqueue_packet(output, &avpkt);
+-    if (ret < 0) {
+-        if (ret != AVERROR(EAGAIN))
+-           return ret;
++    ret = ff_v4l2_context_enqueue_packet(output, &s->buf_pkt);
++    if (ret < 0 && ret != AVERROR(EAGAIN))
++        goto fail;
+ 
+-        s->buf_pkt = avpkt;
+-        /* no input buffers available, continue dequeing */
+-    }
++    /* if EAGAIN don't unref packet and try to enqueue in the next iteration */
++    if (ret != AVERROR(EAGAIN))
++        av_packet_unref(&s->buf_pkt);
+ 
+-    if (avpkt.size) {
++    if (!s->draining) {
+         ret = v4l2_try_start(avctx);
+         if (ret) {
+-            av_packet_unref(&avpkt);
+-
+             /* cant recover */
+-            if (ret == AVERROR(ENOMEM))
+-                return ret;
+-
+-            return 0;
++            if (ret != AVERROR(ENOMEM))
++                ret = 0;
++            goto fail;
+         }
+     }
+ 
+ dequeue:
+-    if (!s->buf_pkt.size)
+-        av_packet_unref(&avpkt);
+     return ff_v4l2_context_dequeue_frame(capture, frame, -1);
++fail:
++    av_packet_unref(&s->buf_pkt);
++    return ret;
+ }
+ 
+ static av_cold int v4l2_decode_init(AVCodecContext *avctx)
+
+[NR] [UAF] commit 4b2248594c7faf1530c43e662c4b80655240b269
+Author: Michael Niedermayer <michael@niedermayer.cc>
+Date:   Sun May 31 12:49:50 2020 +0200
+
+    avcodec/jpeg2000dec: clear pointer which become stale in get_ppt()
+    
+    Fixes: use after free
+    Fixes: 22484/clusterfuzz-testcase-minimized-ffmpeg_AV_CODEC_ID_JPEG2000_fuzzer-5671488765296640
+    
+    Found-by: continuous fuzzing process https://github.com/google/oss-fuzz/tree/master/projects/ffmpeg
+    Reviewed-by: Gautam Ramakrishnan <gautamramk@gmail.com>
+    Signed-off-by: Michael Niedermayer <michael@niedermayer.cc>
+
+diff --git a/libavcodec/jpeg2000dec.c b/libavcodec/jpeg2000dec.c
+index 65555424ed..b7766459c4 100644
+--- a/libavcodec/jpeg2000dec.c
++++ b/libavcodec/jpeg2000dec.c
+@@ -928,6 +928,7 @@ static int get_ppt(Jpeg2000DecoderContext *s, int n)
+         tile->packed_headers = new;
+     } else
+         return AVERROR(ENOMEM);
++    memset(&tile->packed_headers_stream, 0, sizeof(tile->packed_headers_stream));
+     memcpy(tile->packed_headers + tile->packed_headers_size,
+            s->g.buffer, n - 3);
+     tile->packed_headers_size += n - 3;
+
+[ML] commit fac17fd46f0b2d8120c0634fd1249a246df4c995
+Author: Lynne <dev@lynne.ee>
+Date:   Thu May 14 21:52:53 2020 +0100
+
+    lavfi/vulkan: fix 2 minor memory leaks
+
+diff --git a/libavfilter/vulkan.c b/libavfilter/vulkan.c
+index ff76ab15e9..ccf71cb7cd 100644
+--- a/libavfilter/vulkan.c
++++ b/libavfilter/vulkan.c
+@@ -822,6 +822,7 @@ int ff_vk_compile_shader(AVFilterContext *avctx, SPIRVShader *shd,
+                                &shd->shader.module);
+ 
+     /* Free the GLSlangResult struct */
++    av_free(res->data);
+     av_free(res);
+ 
+     if (ret != VK_SUCCESS) {
+@@ -1228,8 +1229,10 @@ void ff_vk_filter_uninit(AVFilterContext *avctx)
+ 
+     glslang_uninit();
+ 
+-    for (int i = 0; i < s->samplers_num; i++)
++    for (int i = 0; i < s->samplers_num; i++) {
+         vkDestroySampler(s->hwctx->act_dev, *s->samplers[i], s->hwctx->alloc);
++        av_free(s->samplers[i]);
++    }
+     av_freep(&s->samplers);
+ 
+     for (int i = 0; i < s->pipelines_num; i++)
+
+[ML] commit e7eb379d98f6b8be9b19afd71fc5b3473eca4a47
+Author: James Almer <jamrial@gmail.com>
+Date:   Tue Apr 14 17:31:26 2020 -0300
+
+    avformat/movenc: remove call to av_copy_packet_side_data() when concatenating eac3 syncframes
+    
+    This generates a potential memory leak, and mixes side data from the last
+    packet with other properties from the first.
+    
+    Keep all the properties from the first packet only in the output packet
+    instead.
+    
+    Signed-off-by: James Almer <jamrial@gmail.com>
+
+diff --git a/libavformat/movenc.c b/libavformat/movenc.c
+index bc8d08044e..bf3e4fa2ce 100644
+--- a/libavformat/movenc.c
++++ b/libavformat/movenc.c
+@@ -520,8 +520,6 @@ concatenate:
+         memcpy(info->pkt.data + info->pkt.size - pkt->size, pkt->data, pkt->size);
+         info->num_blocks += num_blocks;
+         info->pkt.duration += pkt->duration;
+-        if ((ret = av_copy_packet_side_data(&info->pkt, pkt)) < 0)
+-            goto end;
+         if (info->num_blocks != 6)
+             goto end;
+         av_packet_unref(pkt);
+
+[ML] commit 091341f2ab5bd35ca1a2aae90503adc74f8d3523
+Author: Linjie Fu <linjie.justin.fu@gmail.com>
+Date:   Fri Dec 27 16:47:35 2019 +0800
+
+    lavc/pthread_frame: Update user context in ff_frame_thread_free
+    
+    Resolution/format changes lead to re-initialization of hardware
+    accelerations(vaapi/dxva2/..) with new hwaccel_priv_data in
+    the worker-thread. But hwaccel_priv_data in user context won't
+    be updated until the resolution changing frame is output.
+    
+    A termination with "-vframes" just after the reinit will lead to:
+        1. memory leak in worker-thread.
+        2. double free in user-thread.
+    
+    Update user context in ff_frame_thread_free with the last thread
+    submit_packet() was called on.
+    
+    To reproduce:
+    ffmpeg -hwaccel vaapi(dxva2) -v verbose -i
+        fate-suite/h264/reinit-large_420_8-to-small_420_8.h264 -pix_fmt nv12
+        -f rawvideo -vsync passthrough -vframes 47 -y out.yuv
+    
+    Signed-off-by: Linjie Fu <linjie.fu@intel.com>
+    Signed-off-by: Anton Khirnov <anton@khirnov.net>
+
+diff --git a/libavcodec/pthread_frame.c b/libavcodec/pthread_frame.c
+index b5bd494474..172731a98e 100644
+--- a/libavcodec/pthread_frame.c
++++ b/libavcodec/pthread_frame.c
+@@ -658,6 +658,13 @@ void ff_frame_thread_free(AVCodecContext *avctx, int thread_count)
+ 
+     park_frame_worker_threads(fctx, thread_count);
+ 
++    if (fctx->prev_thread && avctx->internal->hwaccel_priv_data !=
++                             fctx->prev_thread->avctx->internal->hwaccel_priv_data) {
++        if (update_context_from_thread(avctx, fctx->prev_thread->avctx, 1) < 0) {
++            av_log(avctx, AV_LOG_ERROR, "Failed to update user thread.\n");
++        }
++    }
++
+     if (fctx->prev_thread && fctx->prev_thread != fctx->threads)
+         if (update_context_from_thread(fctx->threads->avctx, fctx->prev_thread->avctx, 0) < 0) {
+             av_log(avctx, AV_LOG_ERROR, "Final thread update failed\n");
+ 
+[ML] commit af7ec793d49e260aa4c5595d4947322fc91aa72d
+Author: Marton Balint <cus@passwd.hu>
+Date:   Thu Mar 5 23:28:12 2020 +0100
+
+    fftools/ffplay: fix possible memory leak in decoder
+    
+    Fixes ticket #8549.
+    
+    Signed-off-by: Marton Balint <cus@passwd.hu>
+
+diff --git a/fftools/ffplay.c b/fftools/ffplay.c
+index fee0619f7c..f6511e4afd 100644
+--- a/fftools/ffplay.c
++++ b/fftools/ffplay.c
+@@ -644,7 +644,10 @@ static int decoder_decode_frame(Decoder *d, AVFrame *frame, AVSubtitle *sub) {
+                 if (packet_queue_get(d->queue, &pkt, 1, &d->pkt_serial) < 0)
+                     return -1;
+             }
+-        } while (d->queue->serial != d->pkt_serial);
++            if (d->queue->serial == d->pkt_serial)
++                break;
++            av_packet_unref(&pkt);
++        } while (1);
+ 
+         if (pkt.data == flush_pkt.data) {
+             avcodec_flush_buffers(d->avctx);
+
+[DF] commit da399e213523867dea1229e8f0fd955fed0410e7
+Author: Gautam Ramakrishnan <gautamramk@gmail.com>
+Date:   Mon Feb 10 00:03:09 2020 +0530
+
+    libswscale/utils.c: Fix bug #8255
+    
+    Bug #8255 points out a double free error in libwscale/utils.c file.
+    The double free is because the pointer to cascaded_context of an
+    sw_context is not set to NULL after freeing it. When the sw_context
+    is later freed, sws_freeContext is called on the cascaded_context,
+    causing a double free.
+    
+    Signed-off-by: Michael Niedermayer <michael@niedermayer.cc>
+
+diff --git a/libswscale/utils.c b/libswscale/utils.c
+index b2c08a5983..e9c66aeb4f 100644
+--- a/libswscale/utils.c
++++ b/libswscale/utils.c
+@@ -1502,6 +1502,7 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
+         ff_free_filters(c2);
+         if (ff_init_filters(c2) < 0) {
+             sws_freeContext(c2);
++            c->cascaded_context[1] = NULL;
+             return -1;
+         }
+ 
+
+[ML] commit 53a485cd374edff1f0701310af47bf0fd3dd3c0e
+Author: Paul B Mahol <onemda@gmail.com>
+Date:   Sun Feb 9 15:49:09 2020 +0100
+
+    avfilter/af_afftfilt: fix memory leaks on error
+
+diff --git a/libavfilter/af_afftfilt.c b/libavfilter/af_afftfilt.c
+index a14dd280e0..a6156bf852 100644
+--- a/libavfilter/af_afftfilt.c
++++ b/libavfilter/af_afftfilt.c
+@@ -40,6 +40,7 @@ typedef struct AFFTFiltContext {
+     FFTComplex **fft_data;
+     FFTComplex **fft_temp;
+     int nb_exprs;
++    int channels;
+     int window_size;
+     AVExpr **real;
+     AVExpr **imag;
+@@ -129,6 +130,7 @@ static int config_input(AVFilterLink *inlink)
+     char *args;
+     const char *last_expr = "1";
+ 
++    s->channels = inlink->channels;
+     s->pts  = AV_NOPTS_VALUE;
+     s->fft_bits = av_log2(s->fft_size);
+     s->fft  = av_fft_init(s->fft_bits, 0);
+@@ -435,7 +437,7 @@ static av_cold void uninit(AVFilterContext *ctx)
+     av_fft_end(s->fft);
+     av_fft_end(s->ifft);
+ 
+-    for (i = 0; i < s->nb_exprs; i++) {
++    for (i = 0; i < s->channels; i++) {
+         if (s->fft_data)
+             av_freep(&s->fft_data[i]);
+         if (s->fft_temp)
+
+[ML] commit c35382aaf471d5ba88648f22cc182b2b09b7d7fa
+Author: Paul B Mahol <onemda@gmail.com>
+Date:   Tue Feb 4 11:35:02 2020 +0100
+
+    avcodec/mlpenc: fix small memory leak
+
+diff --git a/libavcodec/mlpenc.c b/libavcodec/mlpenc.c
+index a9501c694f..c6a7963c22 100644
+--- a/libavcodec/mlpenc.c
++++ b/libavcodec/mlpenc.c
+@@ -2373,6 +2373,7 @@ static av_cold int mlp_encode_close(AVCodecContext *avctx)
+     av_freep(&ctx->decoding_params);
+     av_freep(&ctx->channel_params);
+     av_freep(&ctx->frame_size);
++    av_freep(&ctx->max_output_bits);
+     ff_af_queue_close(&ctx->afq);
+ 
+     return 0;
+
+[ML] commit bc0ed176024b39c0a4aab745a30c0a295e20b7ec
+Author: Jai Luthra <me@jailuthra.in>
+Date:   Fri Jan 24 16:03:33 2020 +0530
+
+    mlpenc: improve lpc filtering
+    
+    * fix a possible memory leak (apply_filter returned before freeing)
+    * use apply_filters in process_major_frame
+    * revert back to checking bounds with 24 bitdepth, as huff offset takes
+    care of it
+    
+    Signed-off-by: Jai Luthra <me@jailuthra.in>
+
+diff --git a/libavcodec/mlpenc.c b/libavcodec/mlpenc.c
+index 41030f6f07..0e7a9b7640 100644
+--- a/libavcodec/mlpenc.c
++++ b/libavcodec/mlpenc.c
+@@ -1799,20 +1799,20 @@ static void determine_bits(MLPEncodeContext *ctx)
+ 
+ /** Applies the filter to the current samples, and saves the residual back
+  *  into the samples buffer. If the filter is too bad and overflows the
+- *  maximum amount of bits allowed (16 or 24), the samples buffer is left as is and
++ *  maximum amount of bits allowed (24), the samples buffer is left as is and
+  *  the function returns -1.
+  */
+ static int apply_filter(MLPEncodeContext *ctx, unsigned int channel)
+ {
+     FilterParams *fp[NUM_FILTERS] = { &ctx->cur_channel_params[channel].filter_params[FIR],
+                                       &ctx->cur_channel_params[channel].filter_params[IIR], };
+-    int32_t *filter_state_buffer[NUM_FILTERS];
++    int32_t *filter_state_buffer[NUM_FILTERS] = { NULL };
+     int32_t mask = MSB_MASK(ctx->cur_decoding_params->quant_step_size[channel]);
+     int32_t *sample_buffer = ctx->sample_buffer + channel;
+     unsigned int number_of_samples = ctx->number_of_samples;
+     unsigned int filter_shift = fp[FIR]->shift;
+     int filter;
+-    int i;
++    int i, ret = 0;
+ 
+     for (i = 0; i < NUM_FILTERS; i++) {
+         unsigned int size = ctx->number_of_samples;
+@@ -1835,7 +1835,7 @@ static int apply_filter(MLPEncodeContext *ctx, unsigned int channel)
+         int32_t sample = *sample_buffer;
+         unsigned int order;
+         int64_t accum = 0;
+-        int32_t residual;
++        int64_t residual;
+ 
+         for (filter = 0; filter < NUM_FILTERS; filter++) {
+             int32_t *fcoeff = ctx->cur_channel_params[channel].coeff[filter];
+@@ -1847,11 +1847,13 @@ static int apply_filter(MLPEncodeContext *ctx, unsigned int channel)
+         accum  >>= filter_shift;
+         residual = sample - (accum & mask);
+ 
+-        if (residual < SAMPLE_MIN(ctx->wordlength) || residual > SAMPLE_MAX(ctx->wordlength))
+-            return -1;
++        if (residual < SAMPLE_MIN(24) || residual > SAMPLE_MAX(24)) {
++            ret = -1;
++            goto free_and_return;
++        }
+ 
+         filter_state_buffer[FIR][i] = sample;
+-        filter_state_buffer[IIR][i] = residual;
++        filter_state_buffer[IIR][i] = (int32_t) residual;
+ 
+         sample_buffer += ctx->num_channels;
+     }
+@@ -1863,11 +1865,12 @@ static int apply_filter(MLPEncodeContext *ctx, unsigned int channel)
+         sample_buffer += ctx->num_channels;
+     }
+ 
++free_and_return:
+     for (i = 0; i < NUM_FILTERS; i++) {
+         av_freep(&filter_state_buffer[i]);
+     }
+ 
+-    return 0;
++    return ret;
+ }
+ 
+ static void apply_filters(MLPEncodeContext *ctx)
+@@ -2198,9 +2201,6 @@ static void process_major_frame(MLPEncodeContext *ctx)
+     ctx->number_of_samples = ctx->major_frame_size;
+ 
+     for (substr = 0; substr < ctx->num_substreams; substr++) {
+-        RestartHeader *rh = ctx->cur_restart_header;
+-        unsigned int channel;
+-
+         ctx->cur_restart_header = &ctx->restart_header[substr];
+ 
+         ctx->cur_decoding_params = &ctx->major_decoding_params[1][substr];
+@@ -2209,8 +2209,7 @@ static void process_major_frame(MLPEncodeContext *ctx)
+         generate_2_noise_channels(ctx);
+         rematrix_channels        (ctx);
+ 
+-        for (channel = rh->min_channel; channel <= rh->max_channel; channel++)
+-            apply_filter(ctx, channel);
++        apply_filters(ctx);
+     }
+ }
+ 
+
+[ML] commit 32ea6ffb165ebc64211518d1d1990a69eeba51a9
+Author: Paul B Mahol <onemda@gmail.com>
+Date:   Mon Jan 27 16:52:11 2020 +0100
+
+    avfilter/vf_colorconstancy: fix memory leak on error
+    
+    Also remove unneeded log message while here.
+
+diff --git a/libavfilter/vf_colorconstancy.c b/libavfilter/vf_colorconstancy.c
+index 9917d8993e..eae62204b5 100644
+--- a/libavfilter/vf_colorconstancy.c
++++ b/libavfilter/vf_colorconstancy.c
+@@ -121,7 +121,6 @@ static int set_gauss(AVFilterContext *ctx)
+             for (; i >= 0; --i) {
+                 av_freep(&s->gauss[i]);
+             }
+-            av_log(ctx, AV_LOG_ERROR, "Out of memory while allocating gauss buffers.\n");
+             return AVERROR(ENOMEM);
+         }
+     }
+@@ -223,7 +222,6 @@ static int setup_derivative_buffers(AVFilterContext* ctx, ThreadData *td)
+             td->data[b][p] = av_mallocz_array(s->planeheight[p] * s->planewidth[p], sizeof(*td->data[b][p]));
+             if (!td->data[b][p]) {
+                 cleanup_derivative_buffers(td, b + 1, p);
+-                av_log(ctx, AV_LOG_ERROR, "Out of memory while allocating derivatives buffers.\n");
+                 return AVERROR(ENOMEM);
+             }
+         }
+@@ -696,7 +694,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
+     } else {
+         out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
+         if (!out) {
+-            av_log(ctx, AV_LOG_ERROR, "Out of memory while allocating output video buffer.\n");
++            av_frame_free(&in);
+             return AVERROR(ENOMEM);
+         }
+         av_frame_copy_props(out, in);
+
+[ML] commit f907eea8632b62f61aa9a2b28464f7d657dac45b
+Author: Mark Thompson <sw@jkqxz.net>
+Date:   Mon Jan 6 23:56:10 2020 +0000
+
+    vf_tonemap_vaapi: Fix memory leak in error case
+    
+    Fixes CID 1457236.
+
+diff --git a/libavfilter/vf_tonemap_vaapi.c b/libavfilter/vf_tonemap_vaapi.c
+index cc81334d77..2f41b90424 100644
+--- a/libavfilter/vf_tonemap_vaapi.c
++++ b/libavfilter/vf_tonemap_vaapi.c
+@@ -278,7 +278,7 @@ static int tonemap_vaapi_filter_frame(AVFilterLink *inlink, AVFrame *input_frame
+ 
+     err = av_frame_copy_props(output_frame, input_frame);
+     if (err < 0)
+-        return err;
++        goto fail;
+ 
+     if (ctx->color_primaries != AVCOL_PRI_UNSPECIFIED)
+         output_frame->color_primaries = ctx->color_primaries;
+
+[ML] commit 3c8da7b9826d03e370cab550a403ed0e14da24ef
+Author: Jun Zhao <barryjzhao@tencent.com>
+Date:   Wed Jan 1 12:35:31 2020 +0800
+
+    libavutil/opt: fix memory leak after av_dict_parse_string fail
+    
+    In case of failure, all the successfully set entries are stored in
+    *pm. We need to manually free the created dictionary to avoid
+    memory leak.
+    
+    Reviewed-by: Michael Niedermayer <michael@niedermayer.cc>
+    Signed-off-by: Jun Zhao <barryjzhao@tencent.com>
+
+diff --git a/libavutil/opt.c b/libavutil/opt.c
+index 60161d4a80..a482febf5f 100644
+--- a/libavutil/opt.c
++++ b/libavutil/opt.c
+@@ -452,8 +452,10 @@ static int set_string_dict(void *obj, const AVOption *o, const char *val, uint8_
+ 
+     if (val) {
+         int ret = av_dict_parse_string(&options, val, "=", ":", 0);
+-        if (ret < 0)
++        if (ret < 0) {
++            av_dict_free(&options);
+             return ret;
++        }
+     }
+ 
+     av_dict_free((AVDictionary **)dst);
+@@ -2006,8 +2008,10 @@ int av_opt_is_set_to_default(void *obj, const AVOption *o)
+         AVDictionaryEntry *en1 = NULL;
+         AVDictionaryEntry *en2 = NULL;
+         ret = av_dict_parse_string(&dict1, o->default_val.str, "=", ":", 0);
+-        if (ret < 0)
++        if (ret < 0) {
++            av_dict_free(&dict1);
+             return ret;
++        }
+         do {
+             en1 = av_dict_get(dict1, "", en1, AV_DICT_IGNORE_SUFFIX);
+             en2 = av_dict_get(dict2, "", en2, AV_DICT_IGNORE_SUFFIX);
+
+[ML] commit c8e72a6494ebffbe930a30823cb70a0671e6bfe0
+Author: Jun Zhao <barryjzhao@tencent.com>
+Date:   Wed Jan 1 12:27:18 2020 +0800
+
+    lavfi/coreimage: fix memory leak after av_dict_parse_string fail
+    
+    In case of failure, all the successfully set entries are stored in
+    *pm. We need to manually free the created dictionary to avoid
+    memory leak.
+    
+    Signed-off-by: Jun Zhao <barryjzhao@tencent.com>
+
+diff --git a/libavfilter/vf_coreimage.m b/libavfilter/vf_coreimage.m
+index 323a28caa1..4ed5ba7920 100644
+--- a/libavfilter/vf_coreimage.m
++++ b/libavfilter/vf_coreimage.m
+@@ -486,6 +486,7 @@ static av_cold int init(AVFilterContext *fctx)
+         av_log(ctx, AV_LOG_DEBUG, "Filter_string: %s\n", ctx->filter_string);
+         ret = av_dict_parse_string(&filter_dict, ctx->filter_string, "@", "#", AV_DICT_MULTIKEY); // parse filter_name:all_filter_options
+         if (ret) {
++            av_dict_free(&filter_dict);
+             av_log(ctx, AV_LOG_ERROR, "Parsing of filters failed.\n");
+             return AVERROR(EIO);
+         }
+@@ -507,6 +508,7 @@ static av_cold int init(AVFilterContext *fctx)
+             if (strncmp(f->value, "default", 7)) { // not default
+                 ret = av_dict_parse_string(&filter_options, f->value, "=", "@", 0); // parse option_name:option_value
+                 if (ret) {
++                    av_dict_free(&filter_options);
+                     av_log(ctx, AV_LOG_ERROR, "Parsing of filter options for \"%s\" failed.\n", f->key);
+                     return AVERROR(EIO);
+                 }
+
+[ML] commit cf9c9a9db93ac5158ad77ba7f6d23493d7e8e222
+Author: Jun Zhao <barryjzhao@tencent.com>
+Date:   Wed Jan 1 12:09:52 2020 +0800
+
+    lavc/libkvazaar: fix memory leak after av_dict_parse_string fail
+    
+    In case of failure, all the successfully set entries are stored in
+    *pm. We need to manually free the created dictionary to avoid
+    memory leak.
+    
+    Signed-off-by: Jun Zhao <barryjzhao@tencent.com>
+
+diff --git a/libavcodec/libkvazaar.c b/libavcodec/libkvazaar.c
+index a89ca7f749..02bcae3d5c 100644
+--- a/libavcodec/libkvazaar.c
++++ b/libavcodec/libkvazaar.c
+@@ -110,8 +110,8 @@ static av_cold int libkvazaar_init(AVCodecContext *avctx)
+                            entry->key, entry->value);
+                 }
+             }
+-            av_dict_free(&dict);
+         }
++        av_dict_free(&dict);
+     }
+ 
+     ctx->encoder = enc = api->encoder_open(cfg);
+
+[ML] commit 0099f71502b7b88ae11ea7360d0f751be8d5878e
+Author: Jun Zhao <barryjzhao@tencent.com>
+Date:   Wed Jan 1 12:06:47 2020 +0800
+
+    lavc/bsf: fix memory leak after av_dict_parse_string fail
+    
+    In case of failure, all the successfully set entries are stored in
+    *pm. We need to manually free the created dictionary to avoid
+    memory leak.
+    
+    Reviewed-by: Michael Niedermayer <michael@niedermayer.cc>
+    Signed-off-by: Jun Zhao <barryjzhao@tencent.com>
+
+diff --git a/libavcodec/bsf.c b/libavcodec/bsf.c
+index c1653cddb0..8e1af6082b 100644
+--- a/libavcodec/bsf.c
++++ b/libavcodec/bsf.c
+@@ -517,8 +517,8 @@ static int bsf_parse_single(const char *str, AVBSFList *bsf_lst)
+ 
+     ret = av_bsf_list_append2(bsf_lst, bsf_name, &bsf_options);
+ 
+-    av_dict_free(&bsf_options);
+ end:
++    av_dict_free(&bsf_options);
+     av_free(buf);
+     return ret;
+ }
+
+[ML] commit 5d35a6e8e21757dc0b6e77269f186a881538607f
+Author: Marton Balint <cus@passwd.hu>
+Date:   Sun Dec 22 23:50:18 2019 +0100
+
+    avformat/hlsenc: use AV_OPT_TYPE_DICT for hls_ts_options
+    
+    Simplifies code and avoids memory leaks.
+    
+    Signed-off-by: Marton Balint <cus@passwd.hu>
+
+diff --git a/libavformat/hlsenc.c b/libavformat/hlsenc.c
+index 6551e1c234..561e3ff736 100644
+--- a/libavformat/hlsenc.c
++++ b/libavformat/hlsenc.c
+@@ -199,7 +199,6 @@ typedef struct HLSContext {
+     int64_t max_seg_size; // every segment file max size
+ 
+     char *baseurl;
+-    char *format_options_str;
+     char *vtt_format_options_str;
+     char *subtitle_filename;
+     AVDictionary *format_options;
+@@ -853,15 +852,6 @@ static int hls_mux_init(AVFormatContext *s, VariantStream *vs)
+         return ret;
+     }
+ 
+-    if (hls->format_options_str) {
+-        ret = av_dict_parse_string(&hls->format_options, hls->format_options_str, "=", ":", 0);
+-        if (ret < 0) {
+-            av_log(s, AV_LOG_ERROR, "Could not parse format options list '%s'\n",
+-                   hls->format_options_str);
+-            return ret;
+-        }
+-    }
+-
+     if (hls->segment_type == SEGMENT_TYPE_FMP4) {
+         int remaining_options;
+ 
+@@ -874,7 +864,7 @@ static int hls_mux_init(AVFormatContext *s, VariantStream *vs)
+         if (ret < 0)
+             return ret;
+         if (remaining_options) {
+-            av_log(s, AV_LOG_ERROR, "Some of the provided format options in '%s' are not recognized\n", hls->format_options_str);
++            av_log(s, AV_LOG_ERROR, "Some of the provided format options are not recognized\n");
+             return AVERROR(EINVAL);
+         }
+     }
+@@ -2778,13 +2768,6 @@ static int hls_init(AVFormatContext *s)
+             time(&now0);
+             vs->initial_prog_date_time = now0;
+         }
+-        if (hls->format_options_str) {
+-            ret = av_dict_parse_string(&hls->format_options, hls->format_options_str, "=", ":", 0);
+-            if (ret < 0) {
+-                av_log(s, AV_LOG_ERROR, "Could not parse format options list '%s'\n", hls->format_options_str);
+-                goto fail;
+-            }
+-        }
+ 
+         for (j = 0; j < vs->nb_streams; j++) {
+             vs->has_video += vs->streams[j]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO;
+@@ -2992,7 +2975,7 @@ static const AVOption options[] = {
+     {"hls_init_time", "set segment length in seconds at init list",           OFFSET(init_time),    AV_OPT_TYPE_FLOAT,  {.dbl = 0},     0, FLT_MAX, E},
+     {"hls_list_size", "set maximum number of playlist entries",  OFFSET(max_nb_segments),    AV_OPT_TYPE_INT,    {.i64 = 5},     0, INT_MAX, E},
+     {"hls_delete_threshold", "set number of unreferenced segments to keep before deleting",  OFFSET(hls_delete_threshold),    AV_OPT_TYPE_INT,    {.i64 = 1},     1, INT_MAX, E},
+-    {"hls_ts_options","set hls mpegts list of options for the container format used for hls", OFFSET(format_options_str), AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,    E},
++    {"hls_ts_options","set hls mpegts list of options for the container format used for hls", OFFSET(format_options), AV_OPT_TYPE_DICT, {.str = NULL},  0, 0,    E},
+     {"hls_vtt_options","set hls vtt list of options for the container format used for hls", OFFSET(vtt_format_options_str), AV_OPT_TYPE_STRING, {.str = NULL},  0, 0,    E},
+ #if FF_API_HLS_WRAP
+     {"hls_wrap",      "set number after which the index wraps (will be deprecated)",  OFFSET(wrap),    AV_OPT_TYPE_INT,    {.i64 = 0},     0, INT_MAX, E},
+
+[ML] commit 46d2a67f80e60128791d3d254fc6c17db6b94db9
+Author: Jun Zhao <barryjzhao@tencent.com>
+Date:   Tue Dec 3 18:16:24 2019 +0800
+
+    lavfi/avf_showspectrum: Fix the memory leak in error handle path
+    
+    Fix the memory leak in error handle path.
+    
+    Reviewed-by: Michael Niedermayer <michael@niedermayer.cc>
+    Signed-off-by: Jun Zhao <barryjzhao@tencent.com>
+
+diff --git a/libavfilter/avf_showspectrum.c b/libavfilter/avf_showspectrum.c
+index d5785af252..3a3ef7eb31 100644
+--- a/libavfilter/avf_showspectrum.c
++++ b/libavfilter/avf_showspectrum.c
+@@ -700,16 +700,15 @@ static int draw_legend(AVFilterContext *ctx, int samples)
+ 
+     drawtext(s->outpicref, 2, outlink->h - 10, "CREATED BY LIBAVFILTER", 0);
+     drawtext(s->outpicref, outlink->w - 2 - strlen(text) * 10, outlink->h - 10, text, 0);
++    av_freep(&text);
+     if (s->stop) {
+-        char *text = av_asprintf("Zoom: %d Hz - %d Hz", s->start, s->stop);
++        text = av_asprintf("Zoom: %d Hz - %d Hz", s->start, s->stop);
+         if (!text)
+             return AVERROR(ENOMEM);
+         drawtext(s->outpicref, outlink->w - 2 - strlen(text) * 10, 3, text, 0);
+         av_freep(&text);
+     }
+ 
+-    av_freep(&text);
+-
+     dst = s->outpicref->data[0] + (s->start_y - 1) * s->outpicref->linesize[0] + s->start_x - 1;
+     for (x = 0; x < s->w + 1; x++)
+         dst[x] = 200;
+
+[ML] commit f9d6addd60b3f9ac87388fe4ae0dc217235af81d
+Author: Limin Wang <lance.lmwang@gmail.com>
+Date:   Fri Sep 20 19:17:28 2019 +0800
+
+    avformat/libsrt: fix for the memory leak if passphrase has been configured by option
+    
+    Signed-off-by: Limin Wang <lance.lmwang@gmail.com>
+    Signed-off-by: Michael Niedermayer <michael@niedermayer.cc>
+
+diff --git a/libavformat/libsrt.c b/libavformat/libsrt.c
+index 1c34ec50b2..fd27e36b08 100644
+--- a/libavformat/libsrt.c
++++ b/libavformat/libsrt.c
+@@ -494,6 +494,7 @@ static int libsrt_open(URLContext *h, const char *uri, int flags)
+             s->pbkeylen = strtol(buf, NULL, 10);
+         }
+         if (av_find_info_tag(buf, sizeof(buf), "passphrase", p)) {
++            av_freep(&s->passphrase);
+             s->passphrase = av_strndup(buf, strlen(buf));
+         }
+         if (av_find_info_tag(buf, sizeof(buf), "mss", p)) {
+
+[ML] commit 02cf2391966afb68269f0cd4d9ce876dc48ec66f
+Author: James Almer <jamrial@gmail.com>
+Date:   Fri Oct 18 23:23:32 2019 -0300
+
+    avformat: call AVOutputFormat->deinit() when freeing the context
+    
+    Despite the doxy stating that it's called when the muxer is destroyed,
+    this was not true in practice. It's only called by av_write_trailer()
+    and on init() failure.
+    
+    An AVFormatContext may be closed without writing the trailer if errors
+    ocurred while muxing packets, so in order to prevent memory leaks, it
+    should effectively be called when freeing the muxer.
+    
+    Signed-off-by: James Almer <jamrial@gmail.com>
+
+diff --git a/libavformat/mux.c b/libavformat/mux.c
+index 0227c0dadc..411cca3fb2 100644
+--- a/libavformat/mux.c
++++ b/libavformat/mux.c
+@@ -485,6 +485,14 @@ static void flush_if_needed(AVFormatContext *s)
+     }
+ }
+ 
++static void deinit_muxer(AVFormatContext *s)
++{
++    if (s->oformat && s->oformat->deinit && s->internal->initialized)
++        s->oformat->deinit(s);
++    s->internal->initialized =
++    s->internal->streams_initialized = 0;
++}
++
+ int avformat_init_output(AVFormatContext *s, AVDictionary **options)
+ {
+     int ret = 0;
+@@ -536,8 +544,7 @@ int avformat_write_header(AVFormatContext *s, AVDictionary **options)
+     return streams_already_initialized;
+ 
+ fail:
+-    if (s->oformat->deinit)
+-        s->oformat->deinit(s);
++    deinit_muxer(s);
+     return ret;
+ }
+ 
+@@ -1286,11 +1293,7 @@ fail:
+         }
+     }
+ 
+-    if (s->oformat->deinit)
+-        s->oformat->deinit(s);
+-
+-    s->internal->initialized =
+-    s->internal->streams_initialized = 0;
++    deinit_muxer(s);
+ 
+     if (s->pb)
+        avio_flush(s->pb);
+diff --git a/libavformat/utils.c b/libavformat/utils.c
+index 60f0229adc..cfb6d03397 100644
+--- a/libavformat/utils.c
++++ b/libavformat/utils.c
+@@ -4437,6 +4437,9 @@ void avformat_free_context(AVFormatContext *s)
+     if (!s)
+         return;
+ 
++    if (s->oformat && s->oformat->deinit && s->internal->initialized)
++        s->oformat->deinit(s);
++
+     av_opt_free(s);
+     if (s->iformat && s->iformat->priv_class && s->priv_data)
+         av_opt_free(s->priv_data);
+
+[ML] commit aa26f83bdd7ea1f5850520fc25aae38315f6338b
+Author: Paul B Mahol <onemda@gmail.com>
+Date:   Mon Oct 21 16:03:22 2019 +0200
+
+    avfilter/af_join: fix possible memory leaks
+    
+    Allocation of input frames is independent from
+    allocation of new input pads.
+
+diff --git a/libavfilter/af_join.c b/libavfilter/af_join.c
+index e5d178c1ce..ea03b60d67 100644
+--- a/libavfilter/af_join.c
++++ b/libavfilter/af_join.c
+@@ -207,9 +207,12 @@ static av_cold void join_uninit(AVFilterContext *ctx)
+     JoinContext *s = ctx->priv;
+     int i;
+ 
++    for (i = 0; i < s->inputs && s->input_frames; i++) {
++        av_frame_free(&s->input_frames[i]);
++    }
++
+     for (i = 0; i < ctx->nb_inputs; i++) {
+         av_freep(&ctx->input_pads[i].name);
+-        av_frame_free(&s->input_frames[i]);
+     }
+ 
+     av_freep(&s->channels);
+
+[ML] commit 673fce6d40d9a594fb7a0ea17d296b7d3d9ea856
+Author: Paul B Mahol <onemda@gmail.com>
+Date:   Sat Oct 19 19:24:52 2019 +0200
+
+    avfilter/vf_tile: fix memory leak
+    
+    Fixes #8313
+
+diff --git a/libavfilter/vf_tile.c b/libavfilter/vf_tile.c
+index 439689a14d..6278f72abb 100644
+--- a/libavfilter/vf_tile.c
++++ b/libavfilter/vf_tile.c
+@@ -262,6 +262,7 @@ static av_cold void uninit(AVFilterContext *ctx)
+ {
+     TileContext *tile = ctx->priv;
+ 
++    av_frame_free(&tile->out_ref);
+     av_frame_free(&tile->prev_out_ref);
+ }
+ 
+
+[ML] commit c8f3915f8d39dcb20ba79bb955b2d0899f0b0147
+Author: Paul B Mahol <onemda@gmail.com>
+Date:   Sat Oct 19 10:12:09 2019 +0200
+
+    avfilter/vf_decimate: fix memory leaks
+    
+    Fixes #8311
+
+diff --git a/libavfilter/vf_decimate.c b/libavfilter/vf_decimate.c
+index 53347c7f10..88a8b38a58 100644
+--- a/libavfilter/vf_decimate.c
++++ b/libavfilter/vf_decimate.c
+@@ -217,11 +217,13 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
+             av_frame_free(&dm->queue[i].frame);
+         } else {
+             AVFrame *frame = dm->queue[i].frame;
++            dm->queue[i].frame = NULL;
+             if (frame->pts != AV_NOPTS_VALUE && dm->start_pts == AV_NOPTS_VALUE)
+                 dm->start_pts = frame->pts;
+             if (dm->ppsrc) {
+                 av_frame_free(&frame);
+                 frame = dm->clean_src[i];
++                dm->clean_src[i] = NULL;
+             }
+             frame->pts = av_rescale_q(outlink->frame_count_in, dm->ts_unit, (AVRational){1,1}) +
+                          (dm->start_pts == AV_NOPTS_VALUE ? 0 : dm->start_pts);
+@@ -314,7 +316,15 @@ static av_cold void decimate_uninit(AVFilterContext *ctx)
+ 
+     av_frame_free(&dm->last);
+     av_freep(&dm->bdiffs);
++    if (dm->queue) {
++        for (i = 0; i < dm->cycle; i++)
++            av_frame_free(&dm->queue[i].frame);
++    }
+     av_freep(&dm->queue);
++    if (dm->clean_src) {
++        for (i = 0; i < dm->cycle; i++)
++            av_frame_free(&dm->clean_src[i]);
++    }
+     av_freep(&dm->clean_src);
+     for (i = 0; i < ctx->nb_inputs; i++)
+         av_freep(&ctx->input_pads[i].name);
+
+[ML] commit daf2bef98ded7f8431fd04bf3324669329a923c1
+Author: Paul B Mahol <onemda@gmail.com>
+Date:   Fri Oct 18 10:33:54 2019 +0200
+
+    avfilter/af_acrossover: fix memory leak
+    
+    Fixes #8304
+
+diff --git a/libavfilter/af_acrossover.c b/libavfilter/af_acrossover.c
+index 3ccc4d72f6..b1a1155c29 100644
+--- a/libavfilter/af_acrossover.c
++++ b/libavfilter/af_acrossover.c
+@@ -314,6 +314,7 @@ static av_cold void uninit(AVFilterContext *ctx)
+     int i;
+ 
+     av_freep(&s->splits);
++    av_freep(&s->xover);
+ 
+     for (i = 0; i < ctx->nb_outputs; i++)
+         av_freep(&ctx->output_pads[i].name);
+
+[ML] commit feaec3bc3133ff143b8445c919f2c4c56048fdf9
+Author: Jun Zhao <barryjzhao@tencent.com>
+Date:   Sat Oct 12 00:47:25 2019 +0800
+
+    lavf/hlsenc: fix memory leak
+    
+    fix memory leak
+    
+    Reviewed-by: Steven Liu <lq@chinaffmpeg.org>
+    Signed-off-by: Jun Zhao <barryjzhao@tencent.com>
+
+diff --git a/libavformat/hlsenc.c b/libavformat/hlsenc.c
+index cd4320114d..5a27b0f657 100644
+--- a/libavformat/hlsenc.c
++++ b/libavformat/hlsenc.c
+@@ -585,6 +585,8 @@ static int hls_delete_old_segments(AVFormatContext *s, HLSContext *hls,
+             av_strlcpy(sub_path, vtt_dirname, sub_path_size);
+             av_strlcat(sub_path, segment->sub_filename, sub_path_size);
+ 
++            av_freep(&vtt_dirname);
++
+             if (hls->method || (proto && !av_strcasecmp(proto, "http"))) {
+                 av_dict_set(&options, "method", "DELETE", 0);
+                 if ((ret = vs->vtt_avf->io_open(vs->vtt_avf, &out, sub_path, AVIO_FLAG_WRITE, &options)) < 0) {
+
+[ML] commit 3488e0977c671568731afa12b811adce9d4d807f
+Author: Paul B Mahol <onemda@gmail.com>
+Date:   Thu Oct 17 11:28:55 2019 +0200
+
+    avfilter/vf_random: fix memory leaks
+    
+    Fixes #8296
+
+diff --git a/libavfilter/vf_random.c b/libavfilter/vf_random.c
+index 1937eae771..e73a224cd8 100644
+--- a/libavfilter/vf_random.c
++++ b/libavfilter/vf_random.c
+@@ -113,6 +113,14 @@ next:
+     return ret;
+ }
+ 
++static av_cold void uninit(AVFilterContext *ctx)
++{
++    RandomContext *s = ctx->priv;
++
++    for (int i = 0; i < s->nb_frames; i++)
++        av_frame_free(&s->frames[i]);
++}
++
+ static const AVFilterPad random_inputs[] = {
+     {
+         .name         = "default",
+@@ -137,6 +145,7 @@ AVFilter ff_vf_random = {
+     .priv_size   = sizeof(RandomContext),
+     .priv_class  = &random_class,
+     .init        = init,
++    .uninit      = uninit,
+     .inputs      = random_inputs,
+     .outputs     = random_outputs,
+ };
+
+[ML] commit 1a0c584abc9709b1d11dbafef05d22e0937d7d19
+Author: Paul B Mahol <onemda@gmail.com>
+Date:   Wed Oct 16 16:27:06 2019 +0200
+
+    avfilter/f_reverse: fix memory leaks
+    
+    Fixes #8283
+
+diff --git a/libavfilter/f_reverse.c b/libavfilter/f_reverse.c
+index 5f27927075..1e27264dd6 100644
+--- a/libavfilter/f_reverse.c
++++ b/libavfilter/f_reverse.c
+@@ -58,6 +58,11 @@ static av_cold void uninit(AVFilterContext *ctx)
+ {
+     ReverseContext *s = ctx->priv;
+ 
++    while (s->nb_frames > 0) {
++        av_frame_free(&s->frames[s->nb_frames - 1]);
++        s->nb_frames--;
++    }
++
+     av_freep(&s->pts);
+     av_freep(&s->frames);
+ }
+@@ -103,6 +108,7 @@ static int request_frame(AVFilterLink *outlink)
+         AVFrame *out = s->frames[s->nb_frames - 1];
+         out->pts     = s->pts[s->flush_idx++];
+         ret          = ff_filter_frame(outlink, out);
++        s->frames[s->nb_frames - 1] = NULL;
+         s->nb_frames--;
+     }
+ 
+@@ -262,6 +268,7 @@ static int areverse_request_frame(AVFilterLink *outlink)
+         else
+             reverse_samples_packed(out);
+         ret = ff_filter_frame(outlink, out);
++        s->frames[s->nb_frames - 1] = NULL;
+         s->nb_frames--;
+     }
+ 
+
+[ML] commit 6f0dd6b4ab6536ef0506c121263de15a0be64d5d
+Author: Zhong Li <lizhong1008@gmail.com>
+Date:   Sun Sep 29 16:01:06 2019 +0800
+
+    lavc/qsv: fix a memory leak in ff_qsv_set_display_handle()
+    
+    Reported-by: Linjie Fu <linjie.fu@intel.com>
+    Signed-off-by: Zhong Li <zhong.li@intel.com>
+
+diff --git a/libavcodec/qsv.c b/libavcodec/qsv.c
+index 994c9ebcb0..a43f0d5c5a 100644
+--- a/libavcodec/qsv.c
++++ b/libavcodec/qsv.c
+@@ -838,6 +838,8 @@ int ff_qsv_close_internal_session(QSVSession *qs)
+     if (qs->va_device_ctx) {
+         qs->va_device_ctx->free(qs->va_device_ctx);
+     }
++
++    av_buffer_unref(&qs->va_device_ref);
+ #endif
+     return 0;
+ }
+
+[DF] commit 9a53e0125290238db66034f67a9c41c420264c09
+Author: Paul B Mahol <onemda@gmail.com>
+Date:   Mon Oct 7 17:26:59 2019 +0200
+
+    avfilter/formats: guard against double free
+
+diff --git a/libavfilter/formats.c b/libavfilter/formats.c
+index 31ee445c49..e6d27f45f3 100644
+--- a/libavfilter/formats.c
++++ b/libavfilter/formats.c
+@@ -456,7 +456,7 @@ do {                                        \
+ do {                                                               \
+     int idx = -1;                                                  \
+                                                                    \
+-    if (!*ref || !(*ref)->refs)                                    \
++    if (!ref || !*ref || !(*ref)->refs)                            \
+         return;                                                    \
+                                                                    \
+     FIND_REF_INDEX(ref, idx);                                      \
+@@ -518,7 +518,8 @@ void ff_formats_changeref(AVFilterFormats **oldref, AVFilterFormats **newref)
+             int ret = ref_fn(fmts, &ctx->inputs[i]->out_fmts);      \
+             if (ret < 0) {                                          \
+                 unref_fn(&fmts);                                    \
+-                av_freep(&fmts->list);                              \
++                if (fmts)                                           \
++                    av_freep(&fmts->list);                          \
+                 av_freep(&fmts);                                    \
+                 return ret;                                         \
+             }                                                       \
+@@ -530,7 +531,8 @@ void ff_formats_changeref(AVFilterFormats **oldref, AVFilterFormats **newref)
+             int ret = ref_fn(fmts, &ctx->outputs[i]->in_fmts);      \
+             if (ret < 0) {                                          \
+                 unref_fn(&fmts);                                    \
+-                av_freep(&fmts->list);                              \
++                if (fmts)                                           \
++                    av_freep(&fmts->list);                          \
+                 av_freep(&fmts);                                    \
+                 return ret;                                         \
+             }                                                       \
+
+[DF] commit 5b4010e88686ea40a56f016f3c27753af6b3c766
+Author: Paul B Mahol <onemda@gmail.com>
+Date:   Mon Oct 7 11:10:45 2019 +0200
+
+    avfilter/vf_nnedi: fix possible double free
+
+diff --git a/libavfilter/vf_nnedi.c b/libavfilter/vf_nnedi.c
+index b14aa64c04..9bad99e98a 100644
+--- a/libavfilter/vf_nnedi.c
++++ b/libavfilter/vf_nnedi.c
+@@ -809,8 +809,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *src)
+         ret = get_frame(ctx, 1);
+         if (ret < 0) {
+             av_frame_free(&s->dst);
+-            av_frame_free(&s->src);
+             av_frame_free(&s->second);
++            s->src = NULL;
+             return ret;
+         }
+         dst = s->dst;
+
+[ML] commit 5f13859873a45424a345186e8b9913a8c4cb834f
+Author: Jun Zhao <barryjzhao@tencent.com>
+Date:   Mon Sep 23 10:50:21 2019 +0800
+
+    lavf/4xm: fix memory leak in error handing path
+    
+    need to free the header in error path.
+    
+    Reviewed-by: Michael Niedermayer <michael@niedermayer.cc>
+    Signed-off-by: Jun Zhao <barryjzhao@tencent.com>
+
+diff --git a/libavformat/4xm.c b/libavformat/4xm.c
+index a984fc9fdf..a6101a92ec 100644
+--- a/libavformat/4xm.c
++++ b/libavformat/4xm.c
+@@ -241,7 +241,8 @@ static int fourxm_read_header(AVFormatContext *s)
+         size       = AV_RL32(&header[i + 4]);
+         if (size > header_size - i - 8 && (fourcc_tag == vtrk_TAG || fourcc_tag == strk_TAG)) {
+             av_log(s, AV_LOG_ERROR, "chunk larger than array %d>%d\n", size, header_size - i - 8);
+-            return AVERROR_INVALIDDATA;
++            ret = AVERROR_INVALIDDATA;
++            goto fail;
+         }
+ 
+         if (fourcc_tag == std__TAG) {
+
+[ML] commit 0c5726a332734d18821e03779f94d1af8e251641
+Author: Jun Zhao <barryjzhao@tencent.com>
+Date:   Fri Sep 13 19:53:37 2019 +0800
+
+    lavf/hls: fix memory leak in error handling path for option tmp
+    
+    fix memory leak in error handling path for option tmp.
+    
+    Reviewed-by: Steven Liu <lq@onvideo.cn>
+    Signed-off-by: Jun Zhao <barryjzhao@tencent.com>
+
+diff --git a/libavformat/hls.c b/libavformat/hls.c
+index bb07dcb96c..0611ddc6bb 100644
+--- a/libavformat/hls.c
++++ b/libavformat/hls.c
+@@ -620,9 +620,6 @@ static int open_url(AVFormatContext *s, AVIOContext **pb, const char *url,
+     int ret;
+     int is_http = 0;
+ 
+-    av_dict_copy(&tmp, opts, 0);
+-    av_dict_copy(&tmp, opts2, 0);
+-
+     if (av_strstart(url, "crypto", NULL)) {
+         if (url[6] == '+' || url[6] == ':')
+             proto_name = avio_find_protocol_name(url + 7);
+@@ -655,9 +652,13 @@ static int open_url(AVFormatContext *s, AVIOContext **pb, const char *url,
+     else if (strcmp(proto_name, "file") || !strncmp(url, "file,", 5))
+         return AVERROR_INVALIDDATA;
+ 
++    av_dict_copy(&tmp, opts, 0);
++    av_dict_copy(&tmp, opts2, 0);
++
+     if (is_http && c->http_persistent && *pb) {
+         ret = open_url_keepalive(c->ctx, pb, url);
+         if (ret == AVERROR_EXIT) {
++            av_dict_free(&tmp);
+             return ret;
+         } else if (ret < 0) {
+             if (ret != AVERROR_EOF)
+
+[ML] commit 944d76a3e056c26bfa2b6459ec1888f0676a37f2
+Author: Jun Zhao <barryjzhao@tencent.com>
+Date:   Tue Sep 10 18:50:11 2019 +0800
+
+    lavfi/sinc: fix memory leak in error handling path
+    
+    free work&pi_wraps in error handling path to avoid memory leak.
+    
+    Reviewed-by: Paul B Mahol <onemda@gmail.com>
+    Signed-off-by: Jun Zhao <barryjzhao@tencent.com>
+
+diff --git a/libavfilter/asrc_sinc.c b/libavfilter/asrc_sinc.c
+index 0135eb9023..90f043d680 100644
+--- a/libavfilter/asrc_sinc.c
++++ b/libavfilter/asrc_sinc.c
+@@ -239,8 +239,11 @@ static int fir_to_phase(SincContext *s, float **h, int *len, int *post_len, floa
+     s->rdft = s->irdft = NULL;
+     s->rdft  = av_rdft_init(av_log2(work_len), DFT_R2C);
+     s->irdft = av_rdft_init(av_log2(work_len), IDFT_C2R);
+-    if (!s->rdft || !s->irdft)
++    if (!s->rdft || !s->irdft) {
++        av_free(pi_wraps);
++        av_free(work);
+         return AVERROR(ENOMEM);
++    }
+ 
+     av_rdft_calc(s->rdft, work);   /* Cepstral: */
+     UNPACK(work, work_len);
+
+[ML] commit 44b55a8c9c87cd54b404dbf0b1d716eeec5357e6
+Author: Jun Zhao <barryjzhao@tencent.com>
+Date:   Tue Sep 10 18:24:08 2019 +0800
+
+    lavfi/anequalizer: fix memory leak in error handling path
+    
+    free the pad.name in error handling path to avoid memory leak.
+    
+    Reviewed-by: Paul B Mahol <onemda@gmail.com>
+    Signed-off-by: Jun Zhao <barryjzhao@tencent.com>
+
+diff --git a/libavfilter/af_anequalizer.c b/libavfilter/af_anequalizer.c
+index 03d939f170..ee82474083 100644
+--- a/libavfilter/af_anequalizer.c
++++ b/libavfilter/af_anequalizer.c
+@@ -205,8 +205,10 @@ static av_cold int init(AVFilterContext *ctx)
+             .type         = AVMEDIA_TYPE_VIDEO,
+             .config_props = config_video,
+         };
+-        if (!vpad.name)
++        if (!vpad.name) {
++            av_freep(&pad.name);
+             return AVERROR(ENOMEM);
++        }
+     }
+ 
+     ret = ff_insert_outpad(ctx, 0, &pad);
+
+[ML] commit 3740bdee77ae1810162fc215172f432fcee2d0f0
+Author: Jun Zhao <barryjzhao@tencent.com>
+Date:   Tue Sep 10 19:39:27 2019 +0800
+
+    lavf/avidec: fix memory leak in error handling path
+    
+    free the value in error handling path to avoid the memory leak.
+    
+    Signed-off-by: Jun Zhao <barryjzhao@tencent.com>
+    Signed-off-by: Michael Niedermayer <michael@niedermayer.cc>
+
+diff --git a/libavformat/avidec.c b/libavformat/avidec.c
+index df78925d55..e3cd844169 100644
+--- a/libavformat/avidec.c
++++ b/libavformat/avidec.c
+@@ -306,8 +306,10 @@ static int avi_read_tag(AVFormatContext *s, AVStream *st, uint32_t tag,
+     value = av_malloc(size + 1);
+     if (!value)
+         return AVERROR(ENOMEM);
+-    if (avio_read(pb, value, size) != size)
++    if (avio_read(pb, value, size) != size) {
++        av_freep(&value);
+         return AVERROR_INVALIDDATA;
++    }
+     value[size] = 0;
+ 
+     AV_WL32(key, tag);
+
+[ML] commit 1b0a8e48f1d710800d2bd85795cfb3e93f28ab32
+Author: Jun Zhao <barryjzhao@tencent.com>
+Date:   Mon Aug 19 14:52:50 2019 +0800
+
+    lavfi/dnn/dnn_backend_native: fix memory leak in error path
+    
+    fix memory leak in error path
+    
+    Reviewed-by: Guo, Yejun <yejun.guo@intel.com>
+    Signed-off-by: Jun Zhao <barryjzhao@tencent.com>
+
+diff --git a/libavfilter/dnn/dnn_backend_native.c b/libavfilter/dnn/dnn_backend_native.c
+index 09c583b7eb..d52abc66e3 100644
+--- a/libavfilter/dnn/dnn_backend_native.c
++++ b/libavfilter/dnn/dnn_backend_native.c
+@@ -185,6 +185,7 @@ DNNModel *ff_dnn_load_model_native(const char *model_filename)
+             if (dnn_size > file_size || conv_params->input_num <= 0 ||
+                 conv_params->output_num <= 0 || conv_params->kernel_size <= 0){
+                 avio_closep(&model_file_context);
++                av_freep(&conv_params);
+                 ff_dnn_free_model_native(&model);
+                 return NULL;
+             }
+@@ -192,6 +193,9 @@ DNNModel *ff_dnn_load_model_native(const char *model_filename)
+             conv_params->biases = av_malloc(conv_params->output_num * sizeof(float));
+             if (!conv_params->kernel || !conv_params->biases){
+                 avio_closep(&model_file_context);
++                av_freep(&conv_params->kernel);
++                av_freep(&conv_params->biases);
++                av_freep(&conv_params);
+                 ff_dnn_free_model_native(&model);
+                 return NULL;
+             }
+
+[DF] commit df6876d69172140eb315a914a924abece2c6481a
+Author: Jun Zhao <barryjzhao@tencent.com>
+Date:   Mon Aug 19 12:54:27 2019 +0800
+
+    lavfi/af_adeclick: fix double free after ff_filter_frame fail
+    
+    ff_filter_frame fail will free the frame, so we just returen after this
+    function fail.
+    
+    Reviewed-by: Paul B Mahol <onemda@gmail.com>
+    Signed-off-by: Jun Zhao <barryjzhao@tencent.com>
+
+diff --git a/libavfilter/af_adeclick.c b/libavfilter/af_adeclick.c
+index 50eef74921..2c42f97960 100644
+--- a/libavfilter/af_adeclick.c
++++ b/libavfilter/af_adeclick.c
+@@ -592,7 +592,7 @@ static int filter_frame(AVFilterLink *inlink)
+ 
+     ret = ff_filter_frame(outlink, out);
+     if (ret < 0)
+-        goto fail;
++        return ret;
+ 
+     if (s->samples_left > 0) {
+         s->samples_left -= s->hop_size;
+
+[ML] commit f36925201c591015b1fbd366df71317f0290cef2
+Author: Jun Zhao <barryjzhao@tencent.com>
+Date:   Mon Aug 19 21:01:07 2019 +0800
+
+    lavf/hlsenc: free the old_filname to avoid memory leak
+    
+    free the old_filname to avoid memory leak in error handle
+    path.
+    
+    Reviewed-by: Steven Liu <lq@onvideo.cn>
+    Signed-off-by: Jun Zhao <barryjzhao@tencent.com>
+
+diff --git a/libavformat/hlsenc.c b/libavformat/hlsenc.c
+index 149b2a3bd0..01c24b3458 100644
+--- a/libavformat/hlsenc.c
++++ b/libavformat/hlsenc.c
+@@ -2428,6 +2428,7 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
+         // if we're building a VOD playlist, skip writing the manifest multiple times, and just wait until the end
+         if (hls->pl_type != PLAYLIST_TYPE_VOD) {
+             if ((ret = hls_window(s, 0, vs)) < 0) {
++                av_free(old_filename);
+                 return ret;
+             }
+         }
+
+[ML] commit b3b7523feb5acbe1a3376104616fca389e1aaeca
+Author: Linjie Fu <linjie.justin.fu@gmail.com>
+Date:   Fri Jul 26 16:00:24 2019 +0800
+
+    lavu/hwcontext_qsv: fix the memory leak
+    
+    av_dict_free child_device_opts to fix the memory leak.
+    
+    Signed-off-by: Linjie Fu <linjie.fu@intel.com>
+    Signed-off-by: Zhong Li <zhong.li@intel.com>
+
+diff --git a/libavutil/hwcontext_qsv.c b/libavutil/hwcontext_qsv.c
+index 59e4ed9157..0329a81ec3 100644
+--- a/libavutil/hwcontext_qsv.c
++++ b/libavutil/hwcontext_qsv.c
+@@ -1240,6 +1240,8 @@ static int qsv_device_create(AVHWDeviceContext *ctx, const char *device,
+ 
+     ret = av_hwdevice_ctx_create(&priv->child_device_ctx, child_device_type,
+                                  e ? e->value : NULL, child_device_opts, 0);
++
++    av_dict_free(&child_device_opts);
+     if (ret < 0)
+         return ret;
+ 
+
+[NR] [ML] commit b1febda061955c6f4bfbc1a75918b5e75e7d7f80
+Author: James Zern <jzern@google.com>
+Date:   Tue Jul 9 19:03:58 2019 -0700
+
+    avcodec/utils, avcodec_open2: close codec on failure
+    
+    after a successful init if the function fails for another reason close
+    the codec without requiring FF_CODEC_CAP_INIT_CLEANUP which is meant to
+    cover init failures themselves. fixes a memory leak in those cases.
+    
+    BUG=oss-fuzz:15529
+    
+    Signed-off-by: James Zern <jzern@google.com>
+    Signed-off-by: Michael Niedermayer <michael@niedermayer.cc>
+
+diff --git a/libavcodec/utils.c b/libavcodec/utils.c
+index 1b1feca38c..9ff9628f7f 100644
+--- a/libavcodec/utils.c
++++ b/libavcodec/utils.c
+@@ -542,6 +542,7 @@ int attribute_align_arg ff_codec_open2_recursive(AVCodecContext *avctx, const AV
+ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *codec, AVDictionary **options)
+ {
+     int ret = 0;
++    int codec_init_ok = 0;
+     AVDictionary *tmp = NULL;
+     const AVPixFmtDescriptor *pixdesc;
+ 
+@@ -935,6 +936,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
+         if (ret < 0) {
+             goto free_and_end;
+         }
++        codec_init_ok = 1;
+     }
+ 
+     ret=0;
+@@ -1023,7 +1025,8 @@ end:
+     return ret;
+ free_and_end:
+     if (avctx->codec &&
+-        (avctx->codec->caps_internal & FF_CODEC_CAP_INIT_CLEANUP))
++        (codec_init_ok ||
++         (avctx->codec->caps_internal & FF_CODEC_CAP_INIT_CLEANUP)))
+         avctx->codec->close(avctx);
+ 
+     if (codec->priv_class && codec->priv_data_size)
+
+[ML] commit d5a6b390ced64cfd33764930f8b1d3c6437a43b6
+Author: Derek Buitenhuis <derek.buitenhuis@gmail.com>
+Date:   Fri Jun 21 14:34:45 2019 +0100
+
+    ffprobe: Fix memory leak
+    
+    This packet was not necessarily unreferenced.
+    
+    Signed-off-by: Derek Buitenhuis <derek.buitenhuis@gmail.com>
+
+diff --git a/fftools/ffprobe.c b/fftools/ffprobe.c
+index 3becb6330e..5aaddb0308 100644
+--- a/fftools/ffprobe.c
++++ b/fftools/ffprobe.c
+@@ -2429,9 +2429,7 @@ static int read_interval_packets(WriterContext *w, InputFile *ifile,
+         }
+         av_packet_unref(&pkt);
+     }
+-    av_init_packet(&pkt);
+-    pkt.data = NULL;
+-    pkt.size = 0;
++    av_packet_unref(&pkt);
+     //Flush remaining frames that are cached in the decoder
+     for (i = 0; i < fmt_ctx->nb_streams; i++) {
+         pkt.stream_index = i;
+
+[ML] commit 8f6e65183354d1d402ae80c71cba2759fe152018
+Author: Linjie Fu <linjie.justin.fu@gmail.com>
+Date:   Mon Apr 15 21:23:18 2019 +0800
+
+    lavc/qsvenc: Fix the memory leak for enc_ctrl.Payload
+    
+    frame->enc_ctrl.Payload is malloced in get_free_frame, directly memset
+    the whole structure of enc_ctrl to zero will cause the memory leak for
+    enc_ctrl.Payload.
+    
+    frame->enc_ctrl as a structure will be malloc and init to zero by calling
+    frame = av_mallocz(sizeof(*frame)), so the memset is redundant and can
+    be removed.
+    
+    Signed-off-by: Linjie Fu <linjie.fu@intel.com>
+    Signed-off-by: Zhong Li <zhong.li@intel.com>
+
+diff --git a/libavcodec/qsvenc.c b/libavcodec/qsvenc.c
+index a03ab69590..8dbad713d0 100644
+--- a/libavcodec/qsvenc.c
++++ b/libavcodec/qsvenc.c
+@@ -1307,7 +1307,6 @@ static int encode_frame(AVCodecContext *avctx, QSVEncContext *q,
+     if (qsv_frame) {
+         surf = &qsv_frame->surface;
+         enc_ctrl = &qsv_frame->enc_ctrl;
+-        memset(enc_ctrl, 0, sizeof(mfxEncodeCtrl));
+ 
+         if (frame->pict_type == AV_PICTURE_TYPE_I) {
+             enc_ctrl->FrameType = MFX_FRAMETYPE_I | MFX_FRAMETYPE_REF;
+
+[ML] commit 0a347ff4222345c88b93d7962a696f0e9aae7ca2
+Author: Jun Zhao <barryjzhao@tencent.com>
+Date:   Thu Apr 4 23:47:46 2019 +0800
+
+    lavf/matroskaenc: Fix memory leak after write trailer
+    
+    Fix memory leak after write trailer for #7827, only store a audio
+    packet whose buffer has size greater than zero in cur_audio_pkt.
+    
+    Audio packets with size zero, but with side-data currently lead to
+    memleaks, in the Matroska muxer, because they are not properly freed:
+    
+    They are currently put into an AVPacket in the MatroskaMuxContext to
+    ensure that the necessary audio is always available for a new cluster,
+    but are only written and freed when their size is > 0.
+    
+    As the only use we have for such packets consists in updating the
+    CodecPrivate it makes no sense to store these packets at all and this
+    is how this commit solves the memleak.
+    
+    Signed-off-by: Andreas Rheinhardt <andreas.rheinhardt@googlemail.com>
+    Signed-off-by: Jun Zhao <barryjzhao@tencent.com>
+
+diff --git a/libavformat/matroskaenc.c b/libavformat/matroskaenc.c
+index b9f99c4463..06f3aeb46d 100644
+--- a/libavformat/matroskaenc.c
++++ b/libavformat/matroskaenc.c
+@@ -2534,7 +2534,8 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
+     // buffer an audio packet to ensure the packet containing the video
+     // keyframe's timecode is contained in the same cluster for WebM
+     if (codec_type == AVMEDIA_TYPE_AUDIO) {
+-        ret = av_packet_ref(&mkv->cur_audio_pkt, pkt);
++        if (pkt->size > 0)
++            ret = av_packet_ref(&mkv->cur_audio_pkt, pkt);
+     } else
+         ret = mkv_write_packet_internal(s, pkt, 0);
+     return ret;
+
+[ML] commit bf96937a961baeef75236ad0b986a1bb17906143
+Author: Oliver Collyer <ovcollyer@mac.com>
+Date:   Thu Jan 3 07:41:12 2019 +0000
+
+    avdevice/dshow: Fixed some minor memory leaks
+    
+    Signed-off-by: James Almer <jamrial@gmail.com>
+
+diff --git a/libavdevice/dshow.c b/libavdevice/dshow.c
+index 25481580af..d7f5bd7069 100644
+--- a/libavdevice/dshow.c
++++ b/libavdevice/dshow.c
+@@ -278,12 +278,12 @@ dshow_cycle_devices(AVFormatContext *avctx, ICreateDevEnum *devenum,
+                     goto fail1;
+                 }
+                 *device_unique_name = unique_name;
++                unique_name = NULL;
+                 // success, loop will end now
+             }
+         } else {
+             av_log(avctx, AV_LOG_INFO, " \"%s\"\n", friendly_name);
+             av_log(avctx, AV_LOG_INFO, "    Alternative name \"%s\"\n", unique_name);
+-            av_free(unique_name);
+         }
+ 
+ fail1:
+@@ -291,7 +291,8 @@ fail1:
+             IMalloc_Free(co_malloc, olestr);
+         if (bind_ctx)
+             IBindCtx_Release(bind_ctx);
+-        av_free(friendly_name);
++        av_freep(&friendly_name);
++        av_freep(&unique_name);
+         if (bag)
+             IPropertyBag_Release(bag);
+         IMoniker_Release(m);
+@@ -941,6 +942,8 @@ dshow_add_device(AVFormatContext *avctx,
+     AVStream *st;
+     int ret = AVERROR(EIO);
+ 
++    type.pbFormat = NULL;
++
+     st = avformat_new_stream(avctx, NULL);
+     if (!st) {
+         ret = AVERROR(ENOMEM);
+@@ -989,7 +992,8 @@ dshow_add_device(AVFormatContext *avctx,
+             if (par->codec_id == AV_CODEC_ID_NONE) {
+                 av_log(avctx, AV_LOG_ERROR, "Unknown compression type. "
+                                  "Please report type 0x%X.\n", (int) bih->biCompression);
+-                return AVERROR_PATCHWELCOME;
++                ret = AVERROR_PATCHWELCOME;
++                goto error;
+             }
+             par->bits_per_coded_sample = bih->biBitCount;
+         } else {
+@@ -1030,6 +1034,8 @@ dshow_add_device(AVFormatContext *avctx,
+     ret = 0;
+ 
+ error:
++    if (type.pbFormat)
++        CoTaskMemFree(type.pbFormat);
+     return ret;
+ }
+ 
+diff --git a/libavdevice/dshow_pin.c b/libavdevice/dshow_pin.c
+index 664246da92..53b1c9150d 100644
+--- a/libavdevice/dshow_pin.c
++++ b/libavdevice/dshow_pin.c
+@@ -249,8 +249,20 @@ libAVPin_Setup(libAVPin *this, libAVFilter *filter)
+ 
+     return 1;
+ }
++
++static void
++libAVPin_Free(libAVPin *this)
++{
++    if (!this)
++        return;
++    av_freep(&this->imemvtbl);
++    if (this->type.pbFormat) {
++        CoTaskMemFree(this->type.pbFormat);
++        this->type.pbFormat = NULL;
++    }
++}
+ DECLARE_CREATE(libAVPin, libAVPin_Setup(this, filter), libAVFilter *filter)
+-DECLARE_DESTROY(libAVPin, nothing)
++DECLARE_DESTROY(libAVPin, libAVPin_Free)
+ 
+ /*****************************************************************************
+  * libAVMemInputPin
+
+[ML] commit af5b6b45b4d8103a6daaa029beb64f7f6e521792
+Author: Paul B Mahol <onemda@gmail.com>
+Date:   Wed Jan 2 15:34:41 2019 +0100
+
+    avfilter/vf_detelecine: fix obvious frame memory leaks
+
+diff --git a/libavfilter/vf_detelecine.c b/libavfilter/vf_detelecine.c
+index 0d1e2f2ffb..0199214c3e 100644
+--- a/libavfilter/vf_detelecine.c
++++ b/libavfilter/vf_detelecine.c
+@@ -206,6 +206,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
+ 
+     if (s->nskip_fields >= 2) {
+         s->nskip_fields -= 2;
++        av_frame_free(&inpicref);
+         return 0;
+     } else if (s->nskip_fields >= 1) {
+         for (i = 0; i < s->nb_planes; i++) {
+@@ -216,6 +217,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
+         }
+         s->occupied = 1;
+         s->nskip_fields--;
++        av_frame_free(&inpicref);
+         return 0;
+     }
+ 
+
+[ML] commit 7d5bb3a4d34f0cddd300252f8afc37c3d7bf17c8
+Author: Paul B Mahol <onemda@gmail.com>
+Date:   Sun Dec 23 21:49:30 2018 +0100
+
+    avfilter/af_sofalizer: fix memory leaks
+
+diff --git a/libavfilter/af_sofalizer.c b/libavfilter/af_sofalizer.c
+index c30f99c810..90eb3534a4 100644
+--- a/libavfilter/af_sofalizer.c
++++ b/libavfilter/af_sofalizer.c
+@@ -738,7 +738,7 @@ static int load_data(AVFilterContext *ctx, int azim, int elev, float radius, int
+                               data_ir_r + n_samples * i,
+                               &delay_l, &delay_r);
+         if (ret < 0)
+-            return ret;
++            goto fail;
+ 
+         s->delay[0][i] = delay_l * sample_rate;
+         s->delay[1][i] = delay_r * sample_rate;
+
+[ML] commit c6e1966c1a1a8987de0834462d7a76377eaa76bc
+Author: Fan Gang <fangang@sbrella.com>
+Date:   Tue Feb 13 15:38:59 2018 +0800
+
+    avcodec/ass_split: fix a memory leak defect when realloc fails
+    
+    Fixes #7019.
+
+diff --git a/libavcodec/ass_split.c b/libavcodec/ass_split.c
+index 872528bdfa..67da7c6d84 100644
+--- a/libavcodec/ass_split.c
++++ b/libavcodec/ass_split.c
+@@ -249,7 +249,7 @@ static const char *ass_split_section(ASSSplitContext *ctx, const char *buf)
+     const ASSSection *section = &ass_sections[ctx->current_section];
+     int *number = &ctx->field_number[ctx->current_section];
+     int *order = ctx->field_order[ctx->current_section];
+-    int *tmp, i, len;
++    int i, len;
+ 
+     while (buf && *buf) {
+         if (buf[0] == '[') {
+@@ -280,9 +280,9 @@ static const char *ass_split_section(ASSSplitContext *ctx, const char *buf)
+                 while (!is_eol(*buf)) {
+                     buf = skip_space(buf);
+                     len = strcspn(buf, ", \r\n");
+-                    if (!(tmp = av_realloc_array(order, (*number + 1), sizeof(*order))))
++                    if (av_reallocp_array(&order, (*number + 1), sizeof(*order)) != 0)
+                         return NULL;
+-                    order = tmp;
++
+                     order[*number] = -1;
+                     for (i=0; section->fields[i].name; i++)
+                         if (!strncmp(buf, section->fields[i].name, len)) {
+
+[ML] commit e9dbd62cb5f167c99298467db54d56c61a6be74f
+Author: Charles Liu <liuchh83@gmail.com>
+Date:   Tue Oct 30 11:08:29 2018 +0800
+
+    avformat/hlsenc.c: fix memory leak in fmp4 mode.
+    
+    Signed-off-by: Charles Liu <liuchh83@gmail.com>
+    Signed-off-by: Steven Liu <lq@chinaffmpeg.org>
+
+diff --git a/libavformat/hlsenc.c b/libavformat/hlsenc.c
+index 3ccd8756f6..c322b5a48f 100644
+--- a/libavformat/hlsenc.c
++++ b/libavformat/hlsenc.c
+@@ -2205,6 +2205,7 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
+                 avio_flush(oc->pb);
+                 range_length = avio_close_dyn_buf(oc->pb, &buffer);
+                 avio_write(vs->out, buffer, range_length);
++                av_free(buffer);
+                 vs->init_range_length = range_length;
+                 avio_open_dyn_buf(&oc->pb);
+                 vs->packets_written = 0;
+
+[ML] commit e95987f6ca8e6872ca3a47f36ed8d304f88b2bfe
+Author: Paul B Mahol <onemda@gmail.com>
+Date:   Sun Oct 28 22:30:06 2018 +0100
+
+    avfilter/af_afftdn: fix memory leaks reported by coverity
+
+diff --git a/libavfilter/af_afftdn.c b/libavfilter/af_afftdn.c
+index 428375b694..ed2c1c1def 100644
+--- a/libavfilter/af_afftdn.c
++++ b/libavfilter/af_afftdn.c
+@@ -1163,15 +1163,13 @@ static int output_frame(AVFilterLink *inlink)
+     ThreadData td;
+     int ret = 0;
+ 
+-    if (!in) {
+-        in = ff_get_audio_buffer(outlink, s->window_length);
+-        if (!in)
+-            return AVERROR(ENOMEM);
+-    }
++    in = ff_get_audio_buffer(outlink, s->window_length);
++    if (!in)
++        return AVERROR(ENOMEM);
+ 
+     ret = av_audio_fifo_peek(s->fifo, (void **)in->extended_data, s->window_length);
+     if (ret < 0)
+-        return ret;
++        goto end;
+ 
+     if (s->track_noise) {
+         for (int ch = 0; ch < inlink->channels; ch++) {
+@@ -1248,7 +1246,9 @@ static int output_frame(AVFilterLink *inlink)
+                 dst[m] = orig[m] - src[m];
+             break;
+         default:
+-            return AVERROR_BUG;
++            av_frame_free(&out);
++            ret = AVERROR_BUG;
++            goto end;
+         }
+         memmove(src, src + s->sample_advance, (s->window_length - s->sample_advance) * sizeof(*src));
+         memset(src + (s->window_length - s->sample_advance), 0, s->sample_advance * sizeof(*src));
+
+[ML] commit f6912cc3e7569a94159565f553159f6c1b7e0d2c
+Author: Mark Thompson <sw@jkqxz.net>
+Date:   Fri Oct 5 00:09:45 2018 +0100
+
+    trace_headers: Fix memory leaks on syntax read failures
+
+diff --git a/libavcodec/trace_headers_bsf.c b/libavcodec/trace_headers_bsf.c
+index 94a3ef72a2..8322229d4c 100644
+--- a/libavcodec/trace_headers_bsf.c
++++ b/libavcodec/trace_headers_bsf.c
+@@ -49,15 +49,11 @@ static int trace_headers_init(AVBSFContext *bsf)
+         av_log(bsf, AV_LOG_INFO, "Extradata\n");
+ 
+         err = ff_cbs_read_extradata(ctx->cbc, &ps, bsf->par_in);
+-        if (err < 0) {
+-            av_log(bsf, AV_LOG_ERROR, "Failed to read extradata.\n");
+-            return err;
+-        }
+ 
+         ff_cbs_fragment_uninit(ctx->cbc, &ps);
+     }
+ 
+-    return 0;
++    return err;
+ }
+ 
+ static void trace_headers_close(AVBSFContext *bsf)
+@@ -97,14 +93,12 @@ static int trace_headers(AVBSFContext *bsf, AVPacket *pkt)
+     av_log(bsf, AV_LOG_INFO, "Packet: %d bytes%s.\n", pkt->size, tmp);
+ 
+     err = ff_cbs_read_packet(ctx->cbc, &au, pkt);
+-    if (err < 0) {
+-        av_packet_unref(pkt);
+-        return err;
+-    }
+ 
+     ff_cbs_fragment_uninit(ctx->cbc, &au);
+ 
+-    return 0;
++    if (err < 0)
++        av_packet_unref(pkt);
++    return err;
+ }
+ 
+ const AVBitStreamFilter ff_trace_headers_bsf = {
+
+[ML] commit 0f9b298242ca2e1e2e4414967921463566f1dded
+Author: Linjie Fu <linjie.justin.fu@gmail.com>
+Date:   Wed Sep 19 10:01:23 2018 +0800
+
+    avcodec/vaapi: free slice_buffers when decoding failed
+    
+    If vaEndPicture() failed in ff_vaapi_decode_issue(), free
+    the pic->slice_buffers.
+    
+    Fixes the memory leak issue in ticket #7385
+    
+    Signed-off-by: Linjie Fu <linjie.fu@intel.com>
+    Signed-off-by: Mark Thompson <sw@jkqxz.net>
+
+diff --git a/libavcodec/vaapi_decode.c b/libavcodec/vaapi_decode.c
+index ece75c0815..69512e1d45 100644
+--- a/libavcodec/vaapi_decode.c
++++ b/libavcodec/vaapi_decode.c
+@@ -200,12 +200,8 @@ int ff_vaapi_decode_issue(AVCodecContext *avctx,
+         AV_VAAPI_DRIVER_QUIRK_RENDER_PARAM_BUFFERS)
+         ff_vaapi_decode_destroy_buffers(avctx, pic);
+ 
+-    pic->nb_param_buffers = 0;
+-    pic->nb_slices        = 0;
+-    pic->slices_allocated = 0;
+-    av_freep(&pic->slice_buffers);
+-
+-    return 0;
++    err = 0;
++    goto exit;
+ 
+ fail_with_picture:
+     vas = vaEndPicture(ctx->hwctx->display, ctx->va_context);
+@@ -216,6 +212,12 @@ fail_with_picture:
+ fail:
+     ff_vaapi_decode_destroy_buffers(avctx, pic);
+ fail_at_end:
++exit:
++    pic->nb_param_buffers = 0;
++    pic->nb_slices        = 0;
++    pic->slices_allocated = 0;
++    av_freep(&pic->slice_buffers);
++
+     return err;
+ }
+ 
+
+[ML] commit 900487043b6e531fe3edf8c8d38288ef915f6f25
+Author: Zhong Li <lizhong1008@gmail.com>
+Date:   Wed Aug 8 22:42:47 2018 +0800
+
+    lavc/qsvenc: add quality status to side_data
+    
+    Add fix a memory leak issue as James's comments.
+    
+    V2: use a local pict_type since coded_frame is deprecated.
+    
+    Signed-off-by: Zhong Li <zhong.li@intel.com>
+
+diff --git a/libavcodec/qsvenc.c b/libavcodec/qsvenc.c
+index c4fc2c5299..3c82173379 100644
+--- a/libavcodec/qsvenc.c
++++ b/libavcodec/qsvenc.c
+@@ -1175,6 +1175,8 @@ static int encode_frame(AVCodecContext *avctx, QSVEncContext *q,
+         enc_info->Header.BufferSz = sizeof (*enc_info);
+         bs->NumExtParam = 1;
+         enc_buf = av_mallocz(sizeof(mfxExtBuffer *));
++        if (!enc_buf)
++            return AVERROR(ENOMEM);
+         enc_buf[0] = (mfxExtBuffer *)enc_info;
+ 
+         bs->ExtParam = enc_buf;
+@@ -1189,8 +1191,10 @@ static int encode_frame(AVCodecContext *avctx, QSVEncContext *q,
+     if (!sync) {
+         av_freep(&bs);
+  #if QSV_VERSION_ATLEAST(1, 26)
+-        if (avctx->codec_id == AV_CODEC_ID_H264)
++        if (avctx->codec_id == AV_CODEC_ID_H264) {
+             av_freep(&enc_info);
++            av_freep(&enc_buf);
++        }
+  #endif
+         av_packet_unref(&new_pkt);
+         return AVERROR(ENOMEM);
+@@ -1209,8 +1213,10 @@ static int encode_frame(AVCodecContext *avctx, QSVEncContext *q,
+         av_packet_unref(&new_pkt);
+         av_freep(&bs);
+ #if QSV_VERSION_ATLEAST(1, 26)
+-        if (avctx->codec_id == AV_CODEC_ID_H264)
++        if (avctx->codec_id == AV_CODEC_ID_H264) {
+             av_freep(&enc_info);
++            av_freep(&enc_buf);
++        }
+ #endif
+         av_freep(&sync);
+         return (ret == MFX_ERR_MORE_DATA) ?
+@@ -1229,8 +1235,10 @@ static int encode_frame(AVCodecContext *avctx, QSVEncContext *q,
+         av_packet_unref(&new_pkt);
+         av_freep(&bs);
+ #if QSV_VERSION_ATLEAST(1, 26)
+-        if (avctx->codec_id == AV_CODEC_ID_H264)
++        if (avctx->codec_id == AV_CODEC_ID_H264) {
+             av_freep(&enc_info);
++            av_freep(&enc_buf);
++        }
+ #endif
+     }
+ 
+@@ -1253,7 +1261,9 @@ int ff_qsv_encode(AVCodecContext *avctx, QSVEncContext *q,
+         mfxSyncPoint *sync;
+ #if QSV_VERSION_ATLEAST(1, 26)
+         mfxExtAVCEncodedFrameInfo *enc_info;
++        mfxExtBuffer **enc_buf;
+ #endif
++        enum AVPictureType pict_type;
+ 
+         av_fifo_generic_read(q->async_fifo, &new_pkt, sizeof(new_pkt), NULL);
+         av_fifo_generic_read(q->async_fifo, &sync,    sizeof(sync),    NULL);
+@@ -1271,23 +1281,27 @@ int ff_qsv_encode(AVCodecContext *avctx, QSVEncContext *q,
+             bs->FrameType & MFX_FRAMETYPE_xIDR)
+             new_pkt.flags |= AV_PKT_FLAG_KEY;
+ 
+-#if FF_API_CODED_FRAME
+-FF_DISABLE_DEPRECATION_WARNINGS
+         if (bs->FrameType & MFX_FRAMETYPE_I || bs->FrameType & MFX_FRAMETYPE_xI)
+-            avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
++            pict_type = AV_PICTURE_TYPE_I;
+         else if (bs->FrameType & MFX_FRAMETYPE_P || bs->FrameType & MFX_FRAMETYPE_xP)
+-            avctx->coded_frame->pict_type = AV_PICTURE_TYPE_P;
++            pict_type = AV_PICTURE_TYPE_P;
+         else if (bs->FrameType & MFX_FRAMETYPE_B || bs->FrameType & MFX_FRAMETYPE_xB)
+-            avctx->coded_frame->pict_type = AV_PICTURE_TYPE_B;
++            pict_type = AV_PICTURE_TYPE_B;
++
++#if FF_API_CODED_FRAME
++FF_DISABLE_DEPRECATION_WARNINGS
++        avctx->coded_frame->pict_type = pict_type;
+ FF_ENABLE_DEPRECATION_WARNINGS
+ #endif
+ 
+ #if QSV_VERSION_ATLEAST(1, 26)
+         if (avctx->codec_id == AV_CODEC_ID_H264) {
++            enc_buf = bs->ExtParam;
+             enc_info = (mfxExtAVCEncodedFrameInfo *)(*bs->ExtParam);
+-            av_log(avctx, AV_LOG_DEBUG, "QP is %d\n", enc_info->QP);
+-            q->sum_frame_qp += enc_info->QP;
++            ff_side_data_set_encoder_stats(&new_pkt,
++                enc_info->QP * FF_QP2LAMBDA, NULL, 0, pict_type);
+             av_freep(&enc_info);
++            av_freep(&enc_buf);
+         }
+ #endif
+         av_freep(&bs);
+diff --git a/libavcodec/qsvenc.h b/libavcodec/qsvenc.h
+index d1c8a0c998..bb175c5df8 100644
+--- a/libavcodec/qsvenc.h
++++ b/libavcodec/qsvenc.h
+@@ -103,8 +103,6 @@ typedef struct QSVEncContext {
+     int width_align;
+     int height_align;
+ 
+-    int sum_frame_qp;
+-
+     mfxVideoParam param;
+     mfxFrameAllocRequest req;
+ 
+diff --git a/libavcodec/qsvenc_h264.c b/libavcodec/qsvenc_h264.c
+index 985f4aca9c..7aa65e96bc 100644
+--- a/libavcodec/qsvenc_h264.c
++++ b/libavcodec/qsvenc_h264.c
+@@ -94,11 +94,6 @@ static av_cold int qsv_enc_close(AVCodecContext *avctx)
+ {
+     QSVH264EncContext *q = avctx->priv_data;
+ 
+-#if QSV_VERSION_ATLEAST(1, 26)
+-    av_log(avctx, AV_LOG_VERBOSE, "encoded %d frames, avarge qp is %.2f\n",
+-        avctx->frame_number,(double)q->qsv.sum_frame_qp / avctx->frame_number);
+-#endif
+-
+     return ff_qsv_enc_close(avctx, &q->qsv);
+ }
+ 
+
+[ML] commit 6a0feafebe0e74bf7ce2d12a8177c670ebf2379a
+Author: lee ju <julee.vv@outlook.com>
+Date:   Sat Aug 4 10:19:45 2018 +0000
+
+    avcodec/frame_thread_encoder: fix memory leak that  occurs when close encoder without sending eof and receiving to end
+    
+    Signed-off-by: Michael Niedermayer <michael@niedermayer.cc>
+
+diff --git a/libavcodec/frame_thread_encoder.c b/libavcodec/frame_thread_encoder.c
+index 5ff3f7863c..55756c4c54 100644
+--- a/libavcodec/frame_thread_encoder.c
++++ b/libavcodec/frame_thread_encoder.c
+@@ -251,6 +251,23 @@ void ff_frame_thread_encoder_free(AVCodecContext *avctx){
+          pthread_join(c->worker[i], NULL);
+     }
+ 
++    while (av_fifo_size(c->task_fifo) > 0) {
++        Task task;
++        AVFrame *frame;
++        av_fifo_generic_read(c->task_fifo, &task, sizeof(task), NULL);
++        frame = task.indata;
++        av_frame_free(&frame);
++        task.indata = NULL;
++    }
++
++    for (i=0; i<BUFFER_SIZE; i++) {
++        if (c->finished_tasks[i].outdata != NULL) {
++            AVPacket *pkt = c->finished_tasks[i].outdata;
++            av_packet_free(&pkt);
++            c->finished_tasks[i].outdata = NULL;
++        }
++    }
++
+     pthread_mutex_destroy(&c->task_fifo_mutex);
+     pthread_mutex_destroy(&c->finished_task_mutex);
+     pthread_mutex_destroy(&c->buffer_mutex);
+
+commit 0ea20124b710e3f05899b2ccea9f2a00f62a76a0
+Author: Stephen Seo <seo.disparate@gmail.com>
+Date:   Fri Jul 13 19:33:12 2018 +0900
+
+    Add lensfun filter
+    
+    Lensfun is a library that applies lens correction to an image using a
+    database of cameras/lenses (you provide the camera and lens models, and
+    it uses the corresponding database entry's parameters to apply lens
+    correction). It is licensed under LGPL3.
+    
+    The lensfun filter utilizes the lensfun library to apply lens
+    correction to videos as well as images.
+    
+    This filter was created out of necessity since I wanted to apply lens
+    correction to a video and the lenscorrection filter did not work for me.
+    
+    While this filter requires little info from the user to apply lens
+    correction, the flaw is that lensfun is intended to be used on indvidual
+    images. When used on a video, the parameters such as focal length is
+    constant, so lens correction may fail on videos where the camera's focal
+    length changes (zooming in or out via zoom lens). To use this filter
+    correctly on videos where such parameters change, timeline editing may
+    be used since this filter supports it.
+    
+    Note that valgrind shows a small memory leak which is not from this
+    filter but from the lensfun library (memory is allocated when loading
+    the lensfun database but it somehow isn't deallocated even during
+    cleanup; it is briefly created in the init function of the filter, and
+    destroyed before the init function returns). This may have been fixed by
+    the latest commit in the lensfun repository; the current latest release
+    of lensfun is almost 3 years ago.
+    
+    Bi-Linear interpolation is used by default as lanczos interpolation
+    shows more artifacts in the corrected image in my tests.
+    
+    The lanczos interpolation is derived from lenstool's implementation of
+    lanczos interpolation. Lenstool is an app within the lensfun repository
+    which is licensed under GPL3.
+    
+    v2 of this patch fixes license notice in libavfilter/vf_lensfun.c
+    
+    v3 of this patch fixes code style and dependency to gplv3 (thanks to
+    Paul B Mahol for pointing out the mentioned issues).
+    
+    v4 of this patch fixes more code style issues that were missed in
+    v3.
+    
+    v5 of this patch adds line breaks to some of the documentation in
+    doc/filters.texi (thanks to Gyan Doshi for pointing out the issue).
+    
+    v6 of this patch fixes more problems (thanks to Moritz Barsnick for
+    pointing them out).
+    
+    v7 of this patch fixes use of sqrt() (changed to sqrtf(); thanks to
+    Moritz Barsnick for pointing this out). Also should be rebased off of
+    latest master branch commits at this point.
+    
+    Signed-off-by: Stephen Seo <seo.disparate@gmail.com>
+
+diff --git a/configure b/configure
+index b1a4dcfc42..5783407bdc 100755
+--- a/configure
++++ b/configure
+@@ -239,6 +239,7 @@ External library support:
+   --enable-libilbc         enable iLBC de/encoding via libilbc [no]
+   --enable-libjack         enable JACK audio sound server [no]
+   --enable-libkvazaar      enable HEVC encoding via libkvazaar [no]
++  --enable-liblensfun      enable lensfun lens correction [no]
+   --enable-libmodplug      enable ModPlug via libmodplug [no]
+   --enable-libmp3lame      enable MP3 encoding via libmp3lame [no]
+   --enable-libopencore-amrnb enable AMR-NB de/encoding via libopencore-amrnb [no]
+@@ -1656,6 +1657,7 @@ EXTERNAL_LIBRARY_NONFREE_LIST="
+ 
+ EXTERNAL_LIBRARY_VERSION3_LIST="
+     gmp
++    liblensfun
+     libopencore_amrnb
+     libopencore_amrwb
+     libvmaf
+@@ -3353,6 +3355,7 @@ hqdn3d_filter_deps="gpl"
+ interlace_filter_deps="gpl"
+ kerndeint_filter_deps="gpl"
+ ladspa_filter_deps="ladspa libdl"
++lensfun_filter_deps="liblensfun version3"
+ lv2_filter_deps="lv2"
+ mcdeint_filter_deps="avcodec gpl"
+ movie_filter_deps="avcodec avformat"
+@@ -6023,6 +6026,7 @@ enabled libgsm            && { for gsm_hdr in "gsm.h" "gsm/gsm.h"; do
+                                done || die "ERROR: libgsm not found"; }
+ enabled libilbc           && require libilbc ilbc.h WebRtcIlbcfix_InitDecode -lilbc $pthreads_extralibs
+ enabled libkvazaar        && require_pkg_config libkvazaar "kvazaar >= 0.8.1" kvazaar.h kvz_api_get
++enabled liblensfun        && require_pkg_config liblensfun lensfun lensfun.h lf_db_new
+ # While it may appear that require is being used as a pkg-config
+ # fallback for libmfx, it is actually being used to detect a different
+ # installation route altogether.  If libmfx is installed via the Intel
+diff --git a/doc/filters.texi b/doc/filters.texi
+index 49895ff947..9d8f88ddcf 100644
+--- a/doc/filters.texi
++++ b/doc/filters.texi
+@@ -10700,6 +10700,124 @@ The formula that generates the correction is:
+ where @var{r_0} is halve of the image diagonal and @var{r_src} and @var{r_tgt} are the
+ distances from the focal point in the source and target images, respectively.
+ 
++@section lensfun
++
++Apply lens correction via the lensfun library (@url{http://lensfun.sourceforge.net/}).
++
++The @code{lensfun} filter requires the camera make, camera model, and lens model
++to apply the lens correction. The filter will load the lensfun database and
++query it to find the corresponding camera and lens entries in the database. As
++long as these entries can be found with the given options, the filter can
++perform corrections on frames. Note that incomplete strings will result in the
++filter choosing the best match with the given options, and the filter will
++output the chosen camera and lens models (logged with level "info"). You must
++provide the make, camera model, and lens model as they are required.
++
++The filter accepts the following options:
++
++@table @option
++@item make
++The make of the camera (for example, "Canon"). This option is required.
++
++@item model
++The model of the camera (for example, "Canon EOS 100D"). This option is
++required.
++
++@item lens_model
++The model of the lens (for example, "Canon EF-S 18-55mm f/3.5-5.6 IS STM"). This
++option is required.
++
++@item mode
++The type of correction to apply. The following values are valid options:
++
++@table @samp
++@item vignetting
++Enables fixing lens vignetting.
++
++@item geometry
++Enables fixing lens geometry. This is the default.
++
++@item subpixel
++Enables fixing chromatic aberrations.
++
++@item vig_geo
++Enables fixing lens vignetting and lens geometry.
++
++@item vig_subpixel
++Enables fixing lens vignetting and chromatic aberrations.
++
++@item distortion
++Enables fixing both lens geometry and chromatic aberrations.
++
++@item all
++Enables all possible corrections.
++
++@end table
++@item focal_length
++The focal length of the image/video (zoom; expected constant for video). For
++example, a 18--55mm lens has focal length range of [18--55], so a value in that
++range should be chosen when using that lens. Default 18.
++
++@item aperture
++The aperture of the image/video (expected constant for video). Note that
++aperture is only used for vignetting correction. Default 3.5.
++
++@item focus_distance
++The focus distance of the image/video (expected constant for video). Note that
++focus distance is only used for vignetting and only slightly affects the
++vignetting correction process. If unknown, leave it at the default value (which
++is 1000).
++
++@item target_geometry
++The target geometry of the output image/video. The following values are valid
++options:
++
++@table @samp
++@item rectilinear (default)
++@item fisheye
++@item panoramic
++@item equirectangular
++@item fisheye_orthographic
++@item fisheye_stereographic
++@item fisheye_equisolid
++@item fisheye_thoby
++@end table
++@item reverse
++Apply the reverse of image correction (instead of correcting distortion, apply
++it).
++
++@item interpolation
++The type of interpolation used when correcting distortion. The following values
++are valid options:
++
++@table @samp
++@item nearest
++@item linear (default)
++@item lanczos
++@end table
++@end table
++
++@subsection Examples
++
++@itemize
++@item
++Apply lens correction with make "Canon", camera model "Canon EOS 100D", and lens
++model "Canon EF-S 18-55mm f/3.5-5.6 IS STM" with focal length of "18" and
++aperture of "8.0".
++
++@example
++ffmpeg -i input.mov -vf lensfun=make=Canon:model="Canon EOS 100D":lens_model="Canon EF-S 18-55mm f/3.5-5.6 IS STM":focal_length=18:aperture=8 -c:v h264 -b:v 8000k output.mov
++@end example
++
++@item
++Apply the same as before, but only for the first 5 seconds of video.
++
++@example
++ffmpeg -i input.mov -vf lensfun=make=Canon:model="Canon EOS 100D":lens_model="Canon EF-S 18-55mm f/3.5-5.6 IS STM":focal_length=18:aperture=8:enable='lte(t\,5)' -c:v h264 -b:v 8000k output.mov
++@end example
++
++@end itemize
++
+ @section libvmaf
+ 
+ Obtain the VMAF (Video Multi-Method Assessment Fusion)
+diff --git a/libavfilter/Makefile b/libavfilter/Makefile
+index 7735c26529..5d4549e24c 100644
+--- a/libavfilter/Makefile
++++ b/libavfilter/Makefile
+@@ -248,6 +248,7 @@ OBJS-$(CONFIG_INTERLACE_FILTER)              += vf_tinterlace.o
+ OBJS-$(CONFIG_INTERLEAVE_FILTER)             += f_interleave.o
+ OBJS-$(CONFIG_KERNDEINT_FILTER)              += vf_kerndeint.o
+ OBJS-$(CONFIG_LENSCORRECTION_FILTER)         += vf_lenscorrection.o
++OBJS-$(CONFIG_LENSFUN_FILTER)                += vf_lensfun.o
+ OBJS-$(CONFIG_LIBVMAF_FILTER)                += vf_libvmaf.o framesync.o
+ OBJS-$(CONFIG_LIMITER_FILTER)                += vf_limiter.o
+ OBJS-$(CONFIG_LOOP_FILTER)                   += f_loop.o
+diff --git a/libavfilter/allfilters.c b/libavfilter/allfilters.c
+index 0ded83ede2..521bc53164 100644
+--- a/libavfilter/allfilters.c
++++ b/libavfilter/allfilters.c
+@@ -237,6 +237,7 @@ extern AVFilter ff_vf_interlace;
+ extern AVFilter ff_vf_interleave;
+ extern AVFilter ff_vf_kerndeint;
+ extern AVFilter ff_vf_lenscorrection;
++extern AVFilter ff_vf_lensfun;
+ extern AVFilter ff_vf_libvmaf;
+ extern AVFilter ff_vf_limiter;
+ extern AVFilter ff_vf_loop;
+diff --git a/libavfilter/vf_lensfun.c b/libavfilter/vf_lensfun.c
+new file mode 100644
+index 0000000000..fd14210add
+--- /dev/null
++++ b/libavfilter/vf_lensfun.c
+@@ -0,0 +1,548 @@
++/*
++ * Copyright (C) 2007 by Andrew Zabolotny (author of lensfun, from which this filter derives from)
++ * Copyright (C) 2018 Stephen Seo
++ *
++ * This file is part of FFmpeg.
++ *
++ * This program is free software: you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation, either version 3 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
++ */
++
++/**
++ * @file
++ * Lensfun filter, applies lens correction with parameters from the lensfun database
++ *
++ * @see https://lensfun.sourceforge.net/
++ */
++
++#include <float.h>
++#include <math.h>
++
++#include "libavutil/avassert.h"
++#include "libavutil/imgutils.h"
++#include "libavutil/opt.h"
++#include "libswscale/swscale.h"
++#include "avfilter.h"
++#include "formats.h"
++#include "internal.h"
++#include "video.h"
++
++#include <lensfun.h>
++
++#define LANCZOS_RESOLUTION 256
++
++enum Mode {
++    VIGNETTING = 0x1,
++    GEOMETRY_DISTORTION = 0x2,
++    SUBPIXEL_DISTORTION = 0x4
++};
++
++enum InterpolationType {
++    NEAREST,
++    LINEAR,
++    LANCZOS
++};
++
++typedef struct VignettingThreadData {
++    int width, height;
++    uint8_t *data_in;
++    int linesize_in;
++    int pixel_composition;
++    lfModifier *modifier;
++} VignettingThreadData;
++
++typedef struct DistortionCorrectionThreadData {
++    int width, height;
++    const float *distortion_coords;
++    const uint8_t *data_in;
++    uint8_t *data_out;
++    int linesize_in, linesize_out;
++    const float *interpolation;
++    int mode;
++    int interpolation_type;
++} DistortionCorrectionThreadData;
++
++typedef struct LensfunContext {
++    const AVClass *class;
++    const char *make, *model, *lens_model;
++    int mode;
++    float focal_length;
++    float aperture;
++    float focus_distance;
++    int target_geometry;
++    int reverse;
++    int interpolation_type;
++
++    float *distortion_coords;
++    float *interpolation;
++
++    lfLens *lens;
++    lfCamera *camera;
++    lfModifier *modifier;
++} LensfunContext;
++
++#define OFFSET(x) offsetof(LensfunContext, x)
++#define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
++static const AVOption lensfun_options[] = {
++    { "make", "set camera maker", OFFSET(make), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 0, FLAGS },
++    { "model", "set camera model", OFFSET(model), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 0, FLAGS },
++    { "lens_model", "set lens model", OFFSET(lens_model), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 0, FLAGS },
++    { "mode", "set mode", OFFSET(mode), AV_OPT_TYPE_INT, {.i64=GEOMETRY_DISTORTION}, 0, VIGNETTING | GEOMETRY_DISTORTION | SUBPIXEL_DISTORTION, FLAGS, "mode" },
++        { "vignetting", "fix lens vignetting", 0, AV_OPT_TYPE_CONST, {.i64=VIGNETTING}, 0, 0, FLAGS, "mode" },
++        { "geometry", "correct geometry distortion", 0, AV_OPT_TYPE_CONST, {.i64=GEOMETRY_DISTORTION}, 0, 0, FLAGS, "mode" },
++        { "subpixel", "fix chromatic aberrations", 0, AV_OPT_TYPE_CONST, {.i64=SUBPIXEL_DISTORTION}, 0, 0, FLAGS, "mode" },
++        { "vig_geo", "fix lens vignetting and correct geometry distortion", 0, AV_OPT_TYPE_CONST, {.i64=VIGNETTING | GEOMETRY_DISTORTION}, 0, 0, FLAGS, "mode" },
++        { "vig_subpixel", "fix lens vignetting and chromatic aberrations", 0, AV_OPT_TYPE_CONST, {.i64=VIGNETTING | SUBPIXEL_DISTORTION}, 0, 0, FLAGS, "mode" },
++        { "distortion", "correct geometry distortion and chromatic aberrations", 0, AV_OPT_TYPE_CONST, {.i64=GEOMETRY_DISTORTION | SUBPIXEL_DISTORTION}, 0, 0, FLAGS, "mode" },
++        { "all", NULL, 0, AV_OPT_TYPE_CONST, {.i64=VIGNETTING | GEOMETRY_DISTORTION | SUBPIXEL_DISTORTION}, 0, 0, FLAGS, "mode" },
++    { "focal_length", "focal length of video (zoom; constant for the duration of the use of this filter)", OFFSET(focal_length), AV_OPT_TYPE_FLOAT, {.dbl=18}, 0.0, DBL_MAX, FLAGS },
++    { "aperture", "aperture (constant for the duration of the use of this filter)", OFFSET(aperture), AV_OPT_TYPE_FLOAT, {.dbl=3.5}, 0.0, DBL_MAX, FLAGS },
++    { "focus_distance", "focus distance (constant for the duration of the use of this filter)", OFFSET(focus_distance), AV_OPT_TYPE_FLOAT, {.dbl=1000.0f}, 0.0, DBL_MAX, FLAGS },
++    { "target_geometry", "target geometry of the lens correction (only when geometry correction is enabled)", OFFSET(target_geometry), AV_OPT_TYPE_INT, {.i64=LF_RECTILINEAR}, 0, INT_MAX, FLAGS, "lens_geometry" },
++        { "rectilinear", "rectilinear lens (default)", 0, AV_OPT_TYPE_CONST, {.i64=LF_RECTILINEAR}, 0, 0, FLAGS, "lens_geometry" },
++        { "fisheye", "fisheye lens", 0, AV_OPT_TYPE_CONST, {.i64=LF_FISHEYE}, 0, 0, FLAGS, "lens_geometry" },
++        { "panoramic", "panoramic (cylindrical)", 0, AV_OPT_TYPE_CONST, {.i64=LF_PANORAMIC}, 0, 0, FLAGS, "lens_geometry" },
++        { "equirectangular", "equirectangular", 0, AV_OPT_TYPE_CONST, {.i64=LF_EQUIRECTANGULAR}, 0, 0, FLAGS, "lens_geometry" },
++        { "fisheye_orthographic", "orthographic fisheye", 0, AV_OPT_TYPE_CONST, {.i64=LF_FISHEYE_ORTHOGRAPHIC}, 0, 0, FLAGS, "lens_geometry" },
++        { "fisheye_stereographic", "stereographic fisheye", 0, AV_OPT_TYPE_CONST, {.i64=LF_FISHEYE_STEREOGRAPHIC}, 0, 0, FLAGS, "lens_geometry" },
++        { "fisheye_equisolid", "equisolid fisheye", 0, AV_OPT_TYPE_CONST, {.i64=LF_FISHEYE_EQUISOLID}, 0, 0, FLAGS, "lens_geometry" },
++        { "fisheye_thoby", "fisheye as measured by thoby", 0, AV_OPT_TYPE_CONST, {.i64=LF_FISHEYE_THOBY}, 0, 0, FLAGS, "lens_geometry" },
++    { "reverse", "Does reverse correction (regular image to lens distorted)", OFFSET(reverse), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, FLAGS },
++    { "interpolation", "Type of interpolation", OFFSET(interpolation_type), AV_OPT_TYPE_INT, {.i64=LINEAR}, 0, LANCZOS, FLAGS, "interpolation" },
++        { "nearest", NULL, 0, AV_OPT_TYPE_CONST, {.i64=NEAREST}, 0, 0, FLAGS, "interpolation" },
++        { "linear", NULL, 0, AV_OPT_TYPE_CONST, {.i64=LINEAR}, 0, 0, FLAGS, "interpolation" },
++        { "lanczos", NULL, 0, AV_OPT_TYPE_CONST, {.i64=LANCZOS}, 0, 0, FLAGS, "interpolation" },
++    { NULL }
++};
++
++AVFILTER_DEFINE_CLASS(lensfun);
++
++static av_cold int init(AVFilterContext *ctx)
++{
++    LensfunContext *lensfun = ctx->priv;
++    lfDatabase *db;
++    const lfCamera **cameras;
++    const lfLens **lenses;
++
++    if (!lensfun->make) {
++        av_log(ctx, AV_LOG_FATAL, "Option \"make\" not specified\n");
++        return AVERROR(EINVAL);
++    } else if (!lensfun->model) {
++        av_log(ctx, AV_LOG_FATAL, "Option \"model\" not specified\n");
++        return AVERROR(EINVAL);
++    } else if (!lensfun->lens_model) {
++        av_log(ctx, AV_LOG_FATAL, "Option \"lens_model\" not specified\n");
++        return AVERROR(EINVAL);
++    }
++
++    lensfun->lens = lf_lens_new();
++    lensfun->camera = lf_camera_new();
++
++    db = lf_db_new();
++    if (lf_db_load(db) != LF_NO_ERROR) {
++        lf_db_destroy(db);
++        av_log(ctx, AV_LOG_FATAL, "Failed to load lensfun database\n");
++        return AVERROR_INVALIDDATA;
++    }
++
++    cameras = lf_db_find_cameras(db, lensfun->make, lensfun->model);
++    if (cameras && *cameras) {
++        lf_camera_copy(lensfun->camera, *cameras);
++        av_log(ctx, AV_LOG_INFO, "Using camera %s\n", lensfun->camera->Model);
++    } else {
++        lf_free(cameras);
++        lf_db_destroy(db);
++        av_log(ctx, AV_LOG_FATAL, "Failed to find camera in lensfun database\n");
++        return AVERROR_INVALIDDATA;
++    }
++    lf_free(cameras);
++
++    lenses = lf_db_find_lenses_hd(db, lensfun->camera, NULL, lensfun->lens_model, 0);
++    if (lenses && *lenses) {
++        lf_lens_copy(lensfun->lens, *lenses);
++        av_log(ctx, AV_LOG_INFO, "Using lens %s\n", lensfun->lens->Model);
++    } else {
++        lf_free(lenses);
++        lf_db_destroy(db);
++        av_log(ctx, AV_LOG_FATAL, "Failed to find lens in lensfun database\n");
++        return AVERROR_INVALIDDATA;
++    }
++    lf_free(lenses);
++
++    lf_db_destroy(db);
++    return 0;
++}
++
++static int query_formats(AVFilterContext *ctx)
++{
++    // Some of the functions provided by lensfun require pixels in RGB format
++    static const enum AVPixelFormat fmts[] = {AV_PIX_FMT_RGB24, AV_PIX_FMT_NONE};
++    AVFilterFormats *fmts_list = ff_make_format_list(fmts);
++    return ff_set_common_formats(ctx, fmts_list);
++}
++
++static float lanczos_kernel(float x)
++{
++    if (x == 0.0f) {
++        return 1.0f;
++    } else if (x > -2.0f && x < 2.0f) {
++        return (2.0f * sin(M_PI * x) * sin(M_PI / 2.0f * x)) / (M_PI * M_PI * x * x);
++    } else {
++        return 0.0f;
++    }
++}
++
++static int config_props(AVFilterLink *inlink)
++{
++    AVFilterContext *ctx = inlink->dst;
++    LensfunContext *lensfun = ctx->priv;
++    int index;
++    float a;
++    int lensfun_mode = 0;
++
++    if (!lensfun->modifier) {
++        if (lensfun->camera && lensfun->lens) {
++            lensfun->modifier = lf_modifier_new(lensfun->lens,
++                                                lensfun->camera->CropFactor,
++                                                inlink->w,
++                                                inlink->h);
++            if (lensfun->mode & VIGNETTING)
++                lensfun_mode |= LF_MODIFY_VIGNETTING;
++            if (lensfun->mode & GEOMETRY_DISTORTION)
++                lensfun_mode |= LF_MODIFY_DISTORTION | LF_MODIFY_GEOMETRY | LF_MODIFY_SCALE;
++            if (lensfun->mode & SUBPIXEL_DISTORTION)
++                lensfun_mode |= LF_MODIFY_TCA;
++            lf_modifier_initialize(lensfun->modifier,
++                                   lensfun->lens,
++                                   LF_PF_U8,
++                                   lensfun->focal_length,
++                                   lensfun->aperture,
++                                   lensfun->focus_distance,
++                                   0.0,
++                                   lensfun->target_geometry,
++                                   lensfun_mode,
++                                   lensfun->reverse);
++        } else {
++            // lensfun->camera and lensfun->lens should have been initialized
++            return AVERROR_BUG;
++        }
++    }
++
++    if (!lensfun->distortion_coords) {
++        if (lensfun->mode & SUBPIXEL_DISTORTION) {
++            lensfun->distortion_coords = av_malloc(sizeof(float) * inlink->w * inlink->h * 2 * 3);
++            if (!lensfun->distortion_coords)
++                return AVERROR(ENOMEM);
++            if (lensfun->mode & GEOMETRY_DISTORTION) {
++                // apply both geometry and subpixel distortion
++                lf_modifier_apply_subpixel_geometry_distortion(lensfun->modifier,
++                                                               0, 0,
++                                                               inlink->w, inlink->h,
++                                                               lensfun->distortion_coords);
++            } else {
++                // apply only subpixel distortion
++                lf_modifier_apply_subpixel_distortion(lensfun->modifier,
++                                                      0, 0,
++                                                      inlink->w, inlink->h,
++                                                      lensfun->distortion_coords);
++            }
++        } else if (lensfun->mode & GEOMETRY_DISTORTION) {
++            lensfun->distortion_coords = av_malloc(sizeof(float) * inlink->w * inlink->h * 2);
++            if (!lensfun->distortion_coords)
++                return AVERROR(ENOMEM);
++            // apply only geometry distortion
++            lf_modifier_apply_geometry_distortion(lensfun->modifier,
++                                                  0, 0,
++                                                  inlink->w, inlink->h,
++                                                  lensfun->distortion_coords);
++        }
++    }
++
++    if (!lensfun->interpolation)
++        if (lensfun->interpolation_type == LANCZOS) {
++            lensfun->interpolation = av_malloc(sizeof(float) * 4 * LANCZOS_RESOLUTION);
++            if (!lensfun->interpolation)
++                return AVERROR(ENOMEM);
++            for (index = 0; index < 4 * LANCZOS_RESOLUTION; ++index) {
++                if (index == 0) {
++                    lensfun->interpolation[index] = 1.0f;
++                } else {
++                    a = sqrtf((float)index / LANCZOS_RESOLUTION);
++                    lensfun->interpolation[index] = lanczos_kernel(a);
++                }
++            }
++        }
++
++    return 0;
++}
++
++static int vignetting_filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
++{
++    const VignettingThreadData *thread_data = arg;
++    const int slice_start = thread_data->height *  jobnr      / nb_jobs;
++    const int slice_end   = thread_data->height * (jobnr + 1) / nb_jobs;
++
++    lf_modifier_apply_color_modification(thread_data->modifier,
++                                         thread_data->data_in + slice_start * thread_data->linesize_in,
++                                         0,
++                                         slice_start,
++                                         thread_data->width,
++                                         slice_end - slice_start,
++                                         thread_data->pixel_composition,
++                                         thread_data->linesize_in);
++
++    return 0;
++}
++
++static float square(float x)
++{
++    return x * x;
++}
++
++static int distortion_correction_filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
++{
++    const DistortionCorrectionThreadData *thread_data = arg;
++    const int slice_start = thread_data->height *  jobnr      / nb_jobs;
++    const int slice_end   = thread_data->height * (jobnr + 1) / nb_jobs;
++
++    int x, y, i, j, rgb_index;
++    float interpolated, new_x, new_y, d, norm;
++    int new_x_int, new_y_int;
++    for (y = slice_start; y < slice_end; ++y)
++        for (x = 0; x < thread_data->width; ++x)
++            for (rgb_index = 0; rgb_index < 3; ++rgb_index) {
++                if (thread_data->mode & SUBPIXEL_DISTORTION) {
++                    // subpixel (and possibly geometry) distortion correction was applied, correct distortion
++                    switch(thread_data->interpolation_type) {
++                    case NEAREST:
++                        new_x_int = thread_data->distortion_coords[x * 2 * 3 + y * thread_data->width * 2 * 3 + rgb_index * 2]     + 0.5f;
++                        new_y_int = thread_data->distortion_coords[x * 2 * 3 + y * thread_data->width * 2 * 3 + rgb_index * 2 + 1] + 0.5f;
++                        if (new_x_int < 0 || new_x_int >= thread_data->width || new_y_int < 0 || new_y_int >= thread_data->height) {
++                            thread_data->data_out[x * 3 + rgb_index + y * thread_data->linesize_out] = 0;
++                        } else {
++                            thread_data->data_out[x * 3 + rgb_index + y * thread_data->linesize_out] = thread_data->data_in[new_x_int * 3 + rgb_index + new_y_int * thread_data->linesize_in];
++                        }
++                        break;
++                    case LINEAR:
++                        interpolated = 0.0f;
++                        new_x = thread_data->distortion_coords[x * 2 * 3 + y * thread_data->width * 2 * 3 + rgb_index * 2];
++                        new_x_int = new_x;
++                        new_y = thread_data->distortion_coords[x * 2 * 3 + y * thread_data->width * 2 * 3 + rgb_index * 2 + 1];
++                        new_y_int = new_y;
++                        if (new_x_int < 0 || new_x_int + 1 >= thread_data->width || new_y_int < 0 || new_y_int + 1 >= thread_data->height) {
++                            thread_data->data_out[x * 3 + rgb_index + y * thread_data->linesize_out] = 0;
++                        } else {
++                            thread_data->data_out[x * 3 + rgb_index + y * thread_data->linesize_out] =
++                                  thread_data->data_in[ new_x_int      * 3 + rgb_index +  new_y_int      * thread_data->linesize_in] * (new_x_int + 1 - new_x) * (new_y_int + 1 - new_y)
++                                + thread_data->data_in[(new_x_int + 1) * 3 + rgb_index +  new_y_int      * thread_data->linesize_in] * (new_x - new_x_int) * (new_y_int + 1 - new_y)
++                                + thread_data->data_in[ new_x_int      * 3 + rgb_index + (new_y_int + 1) * thread_data->linesize_in] * (new_x_int + 1 - new_x) * (new_y - new_y_int)
++                                + thread_data->data_in[(new_x_int + 1) * 3 + rgb_index + (new_y_int + 1) * thread_data->linesize_in] * (new_x - new_x_int) * (new_y - new_y_int);
++                        }
++                        break;
++                    case LANCZOS:
++                        interpolated = 0.0f;
++                        norm = 0.0f;
++                        new_x = thread_data->distortion_coords[x * 2 * 3 + y * thread_data->width * 2 * 3 + rgb_index * 2];
++                        new_x_int = new_x;
++                        new_y = thread_data->distortion_coords[x * 2 * 3 + y * thread_data->width * 2 * 3 + rgb_index * 2 + 1];
++                        new_y_int = new_y;
++                        for (j = 0; j < 4; ++j)
++                            for (i = 0; i < 4; ++i) {
++                                if (new_x_int + i - 2 < 0 || new_x_int + i - 2 >= thread_data->width || new_y_int + j - 2 < 0 || new_y_int + j - 2 >= thread_data->height)
++                                    continue;
++                                d = square(new_x - (new_x_int + i - 2)) * square(new_y - (new_y_int + j - 2));
++                                if (d >= 4.0f)
++                                    continue;
++                                d = thread_data->interpolation[(int)(d * LANCZOS_RESOLUTION)];
++                                norm += d;
++                                interpolated += thread_data->data_in[(new_x_int + i - 2) * 3 + rgb_index + (new_y_int + j - 2) * thread_data->linesize_in] * d;
++                            }
++                        if (norm == 0.0f) {
++                            thread_data->data_out[x * 3 + rgb_index + y * thread_data->linesize_out] = 0;
++                        } else {
++                            interpolated /= norm;
++                            thread_data->data_out[x * 3 + rgb_index + y * thread_data->linesize_out] = interpolated < 0.0f ? 0.0f : interpolated > 255.0f ? 255.0f : interpolated;
++                        }
++                        break;
++                    }
++                } else if (thread_data->mode & GEOMETRY_DISTORTION) {
++                    // geometry distortion correction was applied, correct distortion
++                    switch(thread_data->interpolation_type) {
++                    case NEAREST:
++                        new_x_int = thread_data->distortion_coords[x * 2 + y * thread_data->width * 2]     + 0.5f;
++                        new_y_int = thread_data->distortion_coords[x * 2 + y * thread_data->width * 2 + 1] + 0.5f;
++                        if (new_x_int < 0 || new_x_int >= thread_data->width || new_y_int < 0 || new_y_int >= thread_data->height) {
++                            thread_data->data_out[x * 3 + rgb_index + y * thread_data->linesize_out] = 0;
++                        } else {
++                            thread_data->data_out[x * 3 + rgb_index + y * thread_data->linesize_out] = thread_data->data_in[new_x_int * 3 + rgb_index + new_y_int * thread_data->linesize_in];
++                        }
++                        break;
++                    case LINEAR:
++                        interpolated = 0.0f;
++                        new_x = thread_data->distortion_coords[x * 2 + y * thread_data->width * 2];
++                        new_x_int = new_x;
++                        new_y = thread_data->distortion_coords[x * 2 + y * thread_data->width * 2 + 1];
++                        new_y_int = new_y;
++                        if (new_x_int < 0 || new_x_int + 1 >= thread_data->width || new_y_int < 0 || new_y_int + 1 >= thread_data->height) {
++                            thread_data->data_out[x * 3 + rgb_index + y * thread_data->linesize_out] = 0;
++                        } else {
++                            thread_data->data_out[x * 3 + rgb_index + y * thread_data->linesize_out] =
++                                  thread_data->data_in[ new_x_int      * 3 + rgb_index +  new_y_int      * thread_data->linesize_in] * (new_x_int + 1 - new_x) * (new_y_int + 1 - new_y)
++                                + thread_data->data_in[(new_x_int + 1) * 3 + rgb_index +  new_y_int      * thread_data->linesize_in] * (new_x - new_x_int) * (new_y_int + 1 - new_y)
++                                + thread_data->data_in[ new_x_int      * 3 + rgb_index + (new_y_int + 1) * thread_data->linesize_in] * (new_x_int + 1 - new_x) * (new_y - new_y_int)
++                                + thread_data->data_in[(new_x_int + 1) * 3 + rgb_index + (new_y_int + 1) * thread_data->linesize_in] * (new_x - new_x_int) * (new_y - new_y_int);
++                        }
++                        break;
++                    case LANCZOS:
++                        interpolated = 0.0f;
++                        norm = 0.0f;
++                        new_x = thread_data->distortion_coords[x * 2     + y * thread_data->width * 2];
++                        new_x_int = new_x;
++                        new_y = thread_data->distortion_coords[x * 2 + 1 + y * thread_data->width * 2];
++                        new_y_int = new_y;
++                        for (j = 0; j < 4; ++j)
++                            for (i = 0; i < 4; ++i) {
++                                if (new_x_int + i - 2 < 0 || new_x_int + i - 2 >= thread_data->width || new_y_int + j - 2 < 0 || new_y_int + j - 2 >= thread_data->height)
++                                    continue;
++                                d = square(new_x - (new_x_int + i - 2)) * square(new_y - (new_y_int + j - 2));
++                                if (d >= 4.0f)
++                                    continue;
++                                d = thread_data->interpolation[(int)(d * LANCZOS_RESOLUTION)];
++                                norm += d;
++                                interpolated += thread_data->data_in[(new_x_int + i - 2) * 3 + rgb_index + (new_y_int + j - 2) * thread_data->linesize_in] * d;
++                            }
++                        if (norm == 0.0f) {
++                            thread_data->data_out[x * 3 + rgb_index + y * thread_data->linesize_out] = 0;
++                        } else {
++                            interpolated /= norm;
++                            thread_data->data_out[x * 3 + rgb_index + y * thread_data->linesize_out] = interpolated < 0.0f ? 0.0f : interpolated > 255.0f ? 255.0f : interpolated;
++                        }
++                        break;
++                    }
++                } else {
++                    // no distortion correction was applied
++                    thread_data->data_out[x * 3 + rgb_index + y * thread_data->linesize_out] = thread_data->data_in[x * 3 + rgb_index + y * thread_data->linesize_in];
++                }
++            }
++
++    return 0;
++}
++
++static int filter_frame(AVFilterLink *inlink, AVFrame *in)
++{
++    AVFilterContext *ctx = inlink->dst;
++    LensfunContext *lensfun = ctx->priv;
++    AVFilterLink *outlink = ctx->outputs[0];
++    AVFrame *out;
++    VignettingThreadData vignetting_thread_data;
++    DistortionCorrectionThreadData distortion_correction_thread_data;
++
++    if (lensfun->mode & VIGNETTING) {
++        av_frame_make_writable(in);
++
++        vignetting_thread_data = (VignettingThreadData) {
++            .width = inlink->w,
++            .height = inlink->h,
++            .data_in = in->data[0],
++            .linesize_in = in->linesize[0],
++            .pixel_composition = LF_CR_3(RED, GREEN, BLUE),
++            .modifier = lensfun->modifier
++        };
++
++        ctx->internal->execute(ctx,
++                               vignetting_filter_slice,
++                               &vignetting_thread_data,
++                               NULL,
++                               FFMIN(outlink->h, ctx->graph->nb_threads));
++    }
++
++    if (lensfun->mode & (GEOMETRY_DISTORTION | SUBPIXEL_DISTORTION)) {
++        out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
++        if (!out) {
++            av_frame_free(&in);
++            return AVERROR(ENOMEM);
++        }
++        av_frame_copy_props(out, in);
++
++        distortion_correction_thread_data = (DistortionCorrectionThreadData) {
++            .width = inlink->w,
++            .height = inlink->h,
++            .distortion_coords = lensfun->distortion_coords,
++            .data_in = in->data[0],
++            .data_out = out->data[0],
++            .linesize_in = in->linesize[0],
++            .linesize_out = out->linesize[0],
++            .interpolation = lensfun->interpolation,
++            .mode = lensfun->mode,
++            .interpolation_type = lensfun->interpolation_type
++        };
++
++        ctx->internal->execute(ctx,
++                               distortion_correction_filter_slice,
++                               &distortion_correction_thread_data,
++                               NULL,
++                               FFMIN(outlink->h, ctx->graph->nb_threads));
++
++        av_frame_free(&in);
++        return ff_filter_frame(outlink, out);
++    } else {
++        return ff_filter_frame(outlink, in);
++    }
++}
++
++static av_cold void uninit(AVFilterContext *ctx)
++{
++    LensfunContext *lensfun = ctx->priv;
++
++    if (lensfun->camera)
++        lf_camera_destroy(lensfun->camera);
++    if (lensfun->lens)
++        lf_lens_destroy(lensfun->lens);
++    if (lensfun->modifier)
++        lf_modifier_destroy(lensfun->modifier);
++    if (lensfun->distortion_coords)
++        av_free(lensfun->distortion_coords);
++    if (lensfun->interpolation)
++        av_free(lensfun->interpolation);
++}
++
++static const AVFilterPad lensfun_inputs[] = {
++    {
++        .name         = "default",
++        .type         = AVMEDIA_TYPE_VIDEO,
++        .config_props = config_props,
++        .filter_frame = filter_frame,
++    },
++    { NULL }
++};
++
++static const AVFilterPad lensfun_outputs[] = {
++    {
++        .name = "default",
++        .type = AVMEDIA_TYPE_VIDEO,
++    },
++    { NULL }
++};
++
++AVFilter ff_vf_lensfun = {
++    .name          = "lensfun",
++    .description   = NULL_IF_CONFIG_SMALL("Apply correction to an image based on info derived from the lensfun database."),
++    .priv_size     = sizeof(LensfunContext),
++    .init          = init,
++    .uninit        = uninit,
++    .query_formats = query_formats,
++    .inputs        = lensfun_inputs,
++    .outputs       = lensfun_outputs,
++    .priv_class    = &lensfun_class,
++    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
++};
+
+[UAF] commit a7e032a277452366771951e29fd0bf2bd5c029f0
+Author: Michael Niedermayer <michael@niedermayer.cc>
+Date:   Tue Jul 3 21:37:46 2018 +0200
+
+    avformat/rmdec: Do not pass mime type in rm_read_multi() to ff_rm_read_mdpr_codecdata()
+    
+    Fixes: use after free()
+    Fixes: rmdec-crash-ffe85b4cab1597d1cfea6955705e53f1f5c8a362
+    
+    Found-by: Paul Ch <paulcher@icloud.com>
+    Signed-off-by: Michael Niedermayer <michael@niedermayer.cc>
+
+diff --git a/libavformat/rmdec.c b/libavformat/rmdec.c
+index ac61723c66..0216003e88 100644
+--- a/libavformat/rmdec.c
++++ b/libavformat/rmdec.c
+@@ -522,7 +522,7 @@ static int rm_read_multi(AVFormatContext *s, AVIOContext *pb,
+ 
+         size2 = avio_rb32(pb);
+         ret = ff_rm_read_mdpr_codecdata(s, s->pb, st2, st2->priv_data,
+-                                        size2, mime);
++                                        size2, NULL);
+         if (ret < 0)
+             return ret;
+     }
+
+[ML] commit 7395f13df94efd349ad29c8b5bb5942b0d44d6e4
+Author: Lukas Rusak <lorusak@gmail.com>
+Date:   Tue Jun 26 14:36:46 2018 -0700
+
+    v4l2_m2m: decoder: fix memory leak
+
+diff --git a/libavcodec/v4l2_m2m_dec.c b/libavcodec/v4l2_m2m_dec.c
+index 598dc10781..710e40efd8 100644
+--- a/libavcodec/v4l2_m2m_dec.c
++++ b/libavcodec/v4l2_m2m_dec.c
+@@ -149,11 +149,14 @@ static int v4l2_receive_frame(AVCodecContext *avctx, AVFrame *frame)
+ 
+     if (avpkt.size) {
+         ret = v4l2_try_start(avctx);
+-        if (ret)
++        if (ret) {
++            av_packet_unref(&avpkt);
+             return 0;
++        }
+     }
+ 
+ dequeue:
++    av_packet_unref(&avpkt);
+     return ff_v4l2_context_dequeue_frame(capture, frame);
+ }
+ 
+
+[ML] commit 70d25268c21cbee5f08304da95be1f647c630c15
+Author: Aman Gupta <aman@tmm1.net>
+Date:   Mon May 21 12:13:06 2018 -0700
+
+    avformat/mpegts: fix memory leak with merge_pmt_versions=1
+    
+    Signed-off-by: Aman Gupta <aman@tmm1.net>
+
+diff --git a/libavformat/mpegts.c b/libavformat/mpegts.c
+index e39c927441..5f53f77d89 100644
+--- a/libavformat/mpegts.c
++++ b/libavformat/mpegts.c
+@@ -247,6 +247,7 @@ typedef struct PESContext {
+     uint8_t header[MAX_PES_HEADER_SIZE];
+     AVBufferRef *buffer;
+     SLConfigDescr sl;
++    int merged_st;
+ } PESContext;
+ 
+ extern AVInputFormat ff_mpegts_demuxer;
+@@ -550,8 +551,8 @@ static void mpegts_close_filter(MpegTSContext *ts, MpegTSFilter *filter)
+         PESContext *pes = filter->u.pes_filter.opaque;
+         av_buffer_unref(&pes->buffer);
+         /* referenced private data will be freed later in
+-         * avformat_close_input */
+-        if (!((PESContext *)filter->u.pes_filter.opaque)->st) {
++         * avformat_close_input (pes->st->priv_data == pes) */
++        if (!pes->st || pes->merged_st) {
+             av_freep(&filter->u.pes_filter.opaque);
+         }
+     }
+@@ -2190,6 +2191,7 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
+                 if (st) {
+                     pes->st = st;
+                     pes->stream_type = stream_type;
++                    pes->merged_st = 1;
+                 }
+             }
+             if (!pes->st) {
+@@ -2211,6 +2213,7 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
+                 if (st) {
+                     pes->st = st;
+                     pes->stream_type = stream_type;
++                    pes->merged_st = 1;
+                 }
+             }
+             if (pes && !pes->st) {
+
+[ML] commit f24b2e64b0f328d321b56ab6119d8398380f0557
+Author: Zhao Zhili <zhilizhao@tencent.com>
+Date:   Mon May 14 20:18:01 2018 +0800
+
+    examples/filtering_video: fix memory leak
+    
+    Signed-off-by: Michael Niedermayer <michael@niedermayer.cc>
+
+diff --git a/doc/examples/filtering_video.c b/doc/examples/filtering_video.c
+index 5a314b3127..105a200d93 100644
+--- a/doc/examples/filtering_video.c
++++ b/doc/examples/filtering_video.c
+@@ -211,18 +211,21 @@ int main(int argc, char **argv)
+ {
+     int ret;
+     AVPacket packet;
+-    AVFrame *frame = av_frame_alloc();
+-    AVFrame *filt_frame = av_frame_alloc();
++    AVFrame *frame;
++    AVFrame *filt_frame;
+ 
+-    if (!frame || !filt_frame) {
+-        perror("Could not allocate frame");
+-        exit(1);
+-    }
+     if (argc != 2) {
+         fprintf(stderr, "Usage: %s file\n", argv[0]);
+         exit(1);
+     }
+ 
++    frame = av_frame_alloc();
++    filt_frame = av_frame_alloc();
++    if (!frame || !filt_frame) {
++        perror("Could not allocate frame");
++        exit(1);
++    }
++
+     if ((ret = open_input_file(argv[1])) < 0)
+         goto end;
+     if ((ret = init_filters(filter_descr)) < 0)
+
+[ML] commit 8ea8be595166cdae73bf3f8bee2f28bc94f1c988
+Author: guikunzhi <guikunzhi@163.com>
+Date:   Thu Apr 26 12:40:52 2018 +0800
+
+    fix memory leak of parsing dash MPD
+    
+    Signed-off-by: guikunzhi <guikunzhi@163.com>
+
+diff --git a/libavformat/dashdec.c b/libavformat/dashdec.c
+index a2e2e13382..c90bc51ce3 100644
+--- a/libavformat/dashdec.c
++++ b/libavformat/dashdec.c
+@@ -706,6 +706,7 @@ static int resolve_content_path(AVFormatContext *s, const char *url, int *max_ur
+     char *baseurl = NULL;
+     char *root_url = NULL;
+     char *text = NULL;
++    char *tmp = NULL;
+ 
+     int isRootHttp = 0;
+     char token ='/';
+@@ -735,9 +736,11 @@ static int resolve_content_path(AVFormatContext *s, const char *url, int *max_ur
+         goto end;
+     }
+     av_strlcpy(text, url, strlen(url)+1);
+-    while (mpdName = av_strtok(text, "/", &text))  {
++    tmp = text;
++    while (mpdName = av_strtok(tmp, "/", &tmp))  {
+         size = strlen(mpdName);
+     }
++    av_free(text);
+ 
+     path = av_mallocz(tmp_max_url_size);
+     tmp_str = av_mallocz(tmp_max_url_size);
+@@ -796,6 +799,7 @@ end:
+     }
+     av_free(path);
+     av_free(tmp_str);
++    xmlFree(baseurl);
+     return updated;
+ 
+ }
+@@ -1121,6 +1125,7 @@ static int parse_manifest(AVFormatContext *s, const char *url, AVIOContext *in)
+     xmlNodePtr root_element = NULL;
+     xmlNodePtr node = NULL;
+     xmlNodePtr period_node = NULL;
++    xmlNodePtr tmp_node = NULL;
+     xmlNodePtr mpd_baseurl_node = NULL;
+     xmlNodePtr period_baseurl_node = NULL;
+     xmlNodePtr period_segmenttemplate_node = NULL;
+@@ -1215,8 +1220,10 @@ static int parse_manifest(AVFormatContext *s, const char *url, AVIOContext *in)
+             xmlFree(val);
+         }
+ 
+-        mpd_baseurl_node = find_child_node_by_name(node, "BaseURL");
+-        if (!mpd_baseurl_node) {
++        tmp_node = find_child_node_by_name(node, "BaseURL");
++        if (tmp_node) {
++            mpd_baseurl_node = xmlCopyNode(tmp_node,1);
++        } else {
+             mpd_baseurl_node = xmlNewNode(NULL, "BaseURL");
+         }
+ 
+@@ -1270,6 +1277,7 @@ cleanup:
+         /*free the document */
+         xmlFreeDoc(doc);
+         xmlCleanupParser();
++        xmlFreeNode(mpd_baseurl_node);
+     }
+ 
+     av_free(new_url);
+
+[ML] commit 606c5c7f3ad1d289ef745b9053024ad318646c7e
+Author: Jacob Trimble <modmaker@google.com>
+Date:   Thu Apr 19 09:35:22 2018 -0700
+
+    avformat/mov: Fix memory leak in encryption info.
+    
+    Signed-off-by: Jacob Trimble <modmaker@google.com>
+    Signed-off-by: Michael Niedermayer <michael@niedermayer.cc>
+
+diff --git a/libavformat/mov.c b/libavformat/mov.c
+index fc512b8d72..4eda48d617 100644
+--- a/libavformat/mov.c
++++ b/libavformat/mov.c
+@@ -5833,6 +5833,7 @@ static int mov_read_sample_encryption_info(MOVContext *c, AVIOContext *pb, MOVSt
+ 
+     if (use_subsamples) {
+         subsample_count = avio_rb16(pb);
++        av_free((*sample)->subsamples);
+         (*sample)->subsamples = av_mallocz_array(subsample_count, sizeof(*subsamples));
+         if (!(*sample)->subsamples) {
+             av_encryption_info_free(*sample);
+
+[ML] commit 9a8811f478db4c24e9acb597274c5feace11f364
+Author: Richard Shaffer <rshaffer@tunein.com>
+Date:   Fri Apr 13 16:42:32 2018 -0700
+
+    libavformat/http: Fix memory leak in get_cookies.
+
+diff --git a/libavformat/http.c b/libavformat/http.c
+index 983034f083..b4a1919f24 100644
+--- a/libavformat/http.c
++++ b/libavformat/http.c
+@@ -1103,6 +1103,7 @@ static int get_cookies(HTTPContext *s, char **cookies, const char *path,
+             snprintf(*cookies, str_size, "%s; %s=%s", tmp, cookie_entry->key, cookie_entry->value);
+             av_free(tmp);
+         }
++        av_dict_free(&cookie_params);
+     }
+ 
+     av_free(set_cookies);
+
+[ML] commit a56580b117362bf1b082cbbd6e3e573380c3aff8
+Author: Paul B Mahol <onemda@gmail.com>
+Date:   Sat Apr 14 19:42:16 2018 +0200
+
+    avfilter/af_headphone: fix memory leak and overread
+    
+    Signed-off-by: Paul B Mahol <onemda@gmail.com>
+
+diff --git a/libavfilter/af_headphone.c b/libavfilter/af_headphone.c
+index edb1fac70f..8b34609a2f 100644
+--- a/libavfilter/af_headphone.c
++++ b/libavfilter/af_headphone.c
+@@ -747,15 +747,19 @@ static int request_frame(AVFilterLink *outlink)
+     ret = ff_request_frame(ctx->inputs[0]);
+     if (ret == AVERROR_EOF && av_audio_fifo_size(s->in[0].fifo) > 0 && s->have_hrirs) {
+         int nb_samples = av_audio_fifo_size(s->in[0].fifo);
+-        AVFrame *in = ff_get_audio_buffer(outlink, s->size - nb_samples);
++        AVFrame *in = ff_get_audio_buffer(ctx->inputs[0], s->size - nb_samples);
++
++        if (!in)
++            return AVERROR(ENOMEM);
+ 
+         av_samples_set_silence(in->extended_data, 0,
+                                in->nb_samples,
+-                               outlink->channels,
+-                               outlink->format);
++                               in->channels,
++                               in->format);
+ 
+         ret = av_audio_fifo_write(s->in[0].fifo, (void **)in->extended_data,
+                                   in->nb_samples);
++        av_frame_free(&in);
+         if (ret < 0)
+             return ret;
+         ret = headphone_frame(s, outlink, nb_samples);
+
+[DF] commit 2f273701119f5ec9534f4327f9f1471728518628
+Author: James Almer <jamrial@gmail.com>
+Date:   Wed Apr 4 11:06:55 2018 -0300
+
+    avcodec/mpeg4videodec: unbreak multithreading decoding
+    
+    Should fix double free related crashes.
+    
+    Signed-off-by: James Almer <jamrial@gmail.com>
+
+diff --git a/libavcodec/mpeg4videodec.c b/libavcodec/mpeg4videodec.c
+index 53ad218cb7..32eb3d1ca8 100644
+--- a/libavcodec/mpeg4videodec.c
++++ b/libavcodec/mpeg4videodec.c
+@@ -3380,11 +3380,13 @@ static av_cold int decode_end(AVCodecContext *avctx)
+     Mpeg4DecContext *ctx = avctx->priv_data;
+     int i;
+ 
+-    for (i = 0; i < 12; i++)
+-        ff_free_vlc(&ctx->studio_intra_tab[i]);
++    if (!avctx->internal->is_copy) {
++        for (i = 0; i < 12; i++)
++            ff_free_vlc(&ctx->studio_intra_tab[i]);
+ 
+-    ff_free_vlc(&ctx->studio_luma_dc);
+-    ff_free_vlc(&ctx->studio_chroma_dc);
++        ff_free_vlc(&ctx->studio_luma_dc);
++        ff_free_vlc(&ctx->studio_chroma_dc);
++    }
+ 
+     return ff_h263_decode_end(avctx);
+ }
+
+[ML] commit be502ec6cde004e1fa05643282939bf3a1507922
+Author: enctac <enctac-at-yahoo.co.jp@ffmpeg.org>
+Date:   Mon Mar 26 01:44:49 2018 +0900
+
+    vf_libvmaf: Fix memory leak
+    
+    Fixes ticket #6967
+
+diff --git a/libavfilter/vf_libvmaf.c b/libavfilter/vf_libvmaf.c
+index dfe474c40c..42c6b66b69 100644
+--- a/libavfilter/vf_libvmaf.c
++++ b/libavfilter/vf_libvmaf.c
+@@ -130,6 +130,8 @@ FRAMESYNC_DEFINE_CLASS(libvmaf, LIBVMAFContext, fs);
+     \
+     ret = !s->frame_set;                                                        \
+     \
++    av_frame_unref(s->gref);                                                    \
++    av_frame_unref(s->gmain);                                                   \
+     s->frame_set = 0;                                                           \
+     \
+     pthread_cond_signal(&s->cond);                                              \
+
+[ML] commit 7e0dc7210bed69106632540367544381a565fa4d
+Author: James Almer <jamrial@gmail.com>
+Date:   Wed Mar 21 01:38:34 2018 -0300
+
+    avcodec/vp9_superframe_split: fix memory leak in case of output packet creation failure
+    
+    Some function calls may fail after the output packet is initialized.
+    
+    Signed-off-by: James Almer <jamrial@gmail.com>
+
+diff --git a/libavcodec/vp9_superframe_split_bsf.c b/libavcodec/vp9_superframe_split_bsf.c
+index 7b6fa38554..9c4aa33dc1 100644
+--- a/libavcodec/vp9_superframe_split_bsf.c
++++ b/libavcodec/vp9_superframe_split_bsf.c
+@@ -126,6 +126,8 @@ static int vp9_superframe_split_filter(AVBSFContext *ctx, AVPacket *out)
+ 
+     return 0;
+ fail:
++    if (ret < 0)
++        av_packet_unref(out);
+     av_packet_unref(&s->buffer_pkt);
+     return ret;
+ }
+
+[ML] commit ae36d6cdde0799099dee0397427438bfc86bc1d9
+Author: James Almer <jamrial@gmail.com>
+Date:   Tue Mar 20 00:55:27 2018 -0300
+
+    avcodec/h265_metadata: fix memory leak in case of output packet creation failure
+    
+    Some function calls may fail after the output packet is initialized.
+    
+    Reviewed-by: jkqxz
+    Signed-off-by: James Almer <jamrial@gmail.com>
+
+diff --git a/libavcodec/h265_metadata_bsf.c b/libavcodec/h265_metadata_bsf.c
+index 8759e410f3..26eb2d05d0 100644
+--- a/libavcodec/h265_metadata_bsf.c
++++ b/libavcodec/h265_metadata_bsf.c
+@@ -239,7 +239,7 @@ static int h265_metadata_filter(AVBSFContext *bsf, AVPacket *out)
+ 
+     err = ff_bsf_get_packet(bsf, &in);
+     if (err < 0)
+-        goto fail;
++        return err;
+ 
+     err = ff_cbs_read_packet(ctx->cbc, au, in);
+     if (err < 0) {
+@@ -324,6 +324,8 @@ static int h265_metadata_filter(AVBSFContext *bsf, AVPacket *out)
+ fail:
+     ff_cbs_fragment_uninit(ctx->cbc, au);
+ 
++    if (err < 0)
++        av_packet_unref(out);
+     av_packet_free(&in);
+ 
+     return err;
+
+[ML] commit 039be6a23f4399a6a020a03be68e4c7cd5aaed2b
+Author: James Almer <jamrial@gmail.com>
+Date:   Tue Mar 20 00:55:26 2018 -0300
+
+    avcodec/h264_metadata: fix memory leak in case of output packet creation failure
+    
+    Some function calls may fail after the output packet is initialized.
+    
+    Reviewed-by: jkqxz
+    Signed-off-by: James Almer <jamrial@gmail.com>
+
+diff --git a/libavcodec/h264_metadata_bsf.c b/libavcodec/h264_metadata_bsf.c
+index e1f0c43b71..27053dbdcf 100644
+--- a/libavcodec/h264_metadata_bsf.c
++++ b/libavcodec/h264_metadata_bsf.c
+@@ -225,7 +225,7 @@ static int h264_metadata_filter(AVBSFContext *bsf, AVPacket *out)
+ 
+     err = ff_bsf_get_packet(bsf, &in);
+     if (err < 0)
+-        goto fail;
++        return err;
+ 
+     err = ff_cbs_read_packet(ctx->cbc, au, in);
+     if (err < 0) {
+@@ -545,6 +545,8 @@ fail:
+     ff_cbs_fragment_uninit(ctx->cbc, au);
+     av_freep(&displaymatrix_side_data);
+ 
++    if (err < 0)
++        av_packet_unref(out);
+     av_packet_free(&in);
+ 
+     return err;
+
+[ML] commit 1c49365c62f417a9e7ed764ac4dd940a2ce8b08d
+Author: Mark Thompson <sw@jkqxz.net>
+Date:   Mon Mar 19 23:12:01 2018 +0000
+
+    h264_metadata: Fix memory leak on multiple display orientation messages
+    
+    Fixes CID #1430176.
+
+diff --git a/libavcodec/h264_metadata_bsf.c b/libavcodec/h264_metadata_bsf.c
+index 3dc4affddd..e1f0c43b71 100644
+--- a/libavcodec/h264_metadata_bsf.c
++++ b/libavcodec/h264_metadata_bsf.c
+@@ -437,6 +437,10 @@ static int h264_metadata_filter(AVBSFContext *bsf, AVPacket *out)
+                                         180.0 / 65536.0);
+                 av_display_matrix_flip(matrix, disp->hor_flip, disp->ver_flip);
+ 
++                // If there are multiple display orientation messages in an
++                // access unit then ignore all but the last one.
++                av_freep(&displaymatrix_side_data);
++
+                 displaymatrix_side_data      = (uint8_t*)matrix;
+                 displaymatrix_side_data_size = 9 * sizeof(int32_t);
+             }
+
+[DF] commit a43e9cdd442b3ccf50faa32a15b03bdaff278017
+Author: James Almer <jamrial@gmail.com>
+Date:   Tue Mar 6 23:26:22 2018 -0300
+
+    avformat/isom: don't free extradata before calling ff_get_extradata()
+    
+    ff_get_extradata() frees any existing extradata before allocating now,
+    and using av_free() here leaves a dangling pointer that will result in
+    a double free.
+    
+    Fixes a regression since 0ca33b1d4eb2a2a2e78ff3a37f1647917635b0d2.
+    
+    Tested-by: Michael Niedermayer <michael@niedermayer.cc>
+    Signed-off-by: James Almer <jamrial@gmail.com>
+
+diff --git a/libavformat/isom.c b/libavformat/isom.c
+index 59502a8b3f..2792371c25 100644
+--- a/libavformat/isom.c
++++ b/libavformat/isom.c
+@@ -526,7 +526,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
+         av_log(fc, AV_LOG_TRACE, "Specific MPEG-4 header len=%d\n", len);
+         if (!len || (uint64_t)len > (1<<30))
+             return AVERROR_INVALIDDATA;
+-        av_free(st->codecpar->extradata);
+         if ((ret = ff_get_extradata(fc, st->codecpar, pb, len)) < 0)
+             return ret;
+         if (st->codecpar->codec_id == AV_CODEC_ID_AAC) {
+
+[ML] commit 88eb368f4210fc2975666f9cb89504b3374094ab
+Author: James Almer <jamrial@gmail.com>
+Date:   Tue Feb 20 10:25:54 2018 -0300
+
+    avformat/matroskadec: free the packet on webvtt side data allocation failure
+    
+    Fixes potential memory leaks
+    
+    Signed-off-by: James Almer <jamrial@gmail.com>
+
+diff --git a/libavformat/matroskadec.c b/libavformat/matroskadec.c
+index edc4f5d476..bf0e47ce3a 100644
+--- a/libavformat/matroskadec.c
++++ b/libavformat/matroskadec.c
+@@ -3121,6 +3121,7 @@ static int matroska_parse_webvtt(MatroskaDemuxContext *matroska,
+                                       AV_PKT_DATA_WEBVTT_IDENTIFIER,
+                                       id_len);
+         if (!buf) {
++            av_packet_unref(pkt);
+             av_free(pkt);
+             return AVERROR(ENOMEM);
+         }
+@@ -3132,6 +3133,7 @@ static int matroska_parse_webvtt(MatroskaDemuxContext *matroska,
+                                       AV_PKT_DATA_WEBVTT_SETTINGS,
+                                       settings_len);
+         if (!buf) {
++            av_packet_unref(pkt);
+             av_free(pkt);
+             return AVERROR(ENOMEM);
+         }
+
+[ML] commit 2eb396b175e55e515aa6a13c5b1789a2a18d3935
+Author: Mark Thompson <sw@jkqxz.net>
+Date:   Fri Jan 26 23:12:18 2018 +0000
+
+    hwcontext: Fix memory leak on derived frame allocation failure
+
+diff --git a/libavutil/hwcontext.c b/libavutil/hwcontext.c
+index 6dc95bba15..2630087b5d 100644
+--- a/libavutil/hwcontext.c
++++ b/libavutil/hwcontext.c
+@@ -470,8 +470,10 @@ int av_hwframe_get_buffer(AVBufferRef *hwframe_ref, AVFrame *frame, int flags)
+ 
+         ret = av_hwframe_get_buffer(ctx->internal->source_frames,
+                                     src_frame, 0);
+-        if (ret < 0)
++        if (ret < 0) {
++            av_frame_free(&src_frame);
+             return ret;
++        }
+ 
+         ret = av_hwframe_map(frame, src_frame,
+                              ctx->internal->source_allocation_map_flags);
+
+[ML] commit ef5994e09d07ace62a672fcdc84761231288edad
+Author: Nikolas Bowe <nbowe-at-google.com@ffmpeg.org>
+Date:   Fri Jan 19 13:17:07 2018 -0800
+
+    avformat/lrcdec: Fix memory leak in lrc_read_header()
+    
+    Signed-off-by: Michael Niedermayer <michael@niedermayer.cc>
+
+diff --git a/libavformat/lrcdec.c b/libavformat/lrcdec.c
+index 12f74b22a0..f4e9a4efa9 100644
+--- a/libavformat/lrcdec.c
++++ b/libavformat/lrcdec.c
+@@ -212,6 +212,7 @@ static int lrc_read_header(AVFormatContext *s)
+     }
+     ff_subtitles_queue_finalize(s, &lrc->q);
+     ff_metadata_conv_ctx(s, NULL, ff_lrc_metadata_conv);
++    av_bprint_finalize(&line, NULL);
+     return 0;
+ }
+ 

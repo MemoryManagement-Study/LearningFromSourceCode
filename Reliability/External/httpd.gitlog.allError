@@ -1,0 +1,708 @@
+[DF] commit ce90ee932ca6bf5f4b19a707d437f902cd803111
+Author: Yann Ylavic <ylavic@apache.org>
+Date:   Tue Feb 8 13:07:32 2022 +0000
+
+    mod_http2: Fix possible beam bucket double free from session destroy.
+    
+    When the session pool is destroyed, so is the beam's pool so we don't
+    want to run the beam cleanup twice.
+    
+    ASan is reporting something like this (APR_POOL_DEBUG):
+    
+    =================================================================
+    ==81201==ERROR: AddressSanitizer: heap-use-after-free on address 0x603000080ce8 at pc 0x7fdc78962cc9 bp 0x7fdc731ff4f0 sp 0x7fdc731ff4e8
+    READ of size 8 at 0x603000080ce8 thread T11
+        #0 0x7fdc78962cc8 in recv_buffer_cleanup ~httpd/modules/http2/h2_bucket_beam.c:279
+        #1 0x7fdc78962fdc in beam_cleanup ~httpd/modules/http2/h2_bucket_beam.c:306
+        #2 0x7fdc7896300c in beam_pool_cleanup ~httpd/modules/http2/h2_bucket_beam.c:313
+        #3 0x7fdc7c5a8239 in run_cleanups memory/unix/apr_pools.c:2689
+        #4 0x7fdc7c5a50f9 in pool_clear_debug memory/unix/apr_pools.c:1867
+        #5 0x7fdc7c5a562e in pool_destroy_debug memory/unix/apr_pools.c:1965
+        #6 0x7fdc7c5a5179 in pool_clear_debug memory/unix/apr_pools.c:1880
+        #7 0x7fdc7c5a562e in pool_destroy_debug memory/unix/apr_pools.c:1965
+        #8 0x7fdc7c5a5179 in pool_clear_debug memory/unix/apr_pools.c:1880
+        #9 0x7fdc7c5a562e in pool_destroy_debug memory/unix/apr_pools.c:1965
+        #10 0x7fdc7c5a5179 in pool_clear_debug memory/unix/apr_pools.c:1880
+        #11 0x7fdc7c5a562e in pool_destroy_debug memory/unix/apr_pools.c:1965
+        #12 0x7fdc7c5a5827 in apr_pool_destroy_debug memory/unix/apr_pools.c:2014
+        #13 0x7fdc789aeaa5 in h2_session_pre_close ~httpd/modules/http2/h2_session.c:1934
+        #14 0x7fdc7896a20e in h2_c1_pre_close ~httpd/modules/http2/h2_c1.c:188
+        #15 0x7fdc7896b538 in h2_c1_hook_pre_close ~httpd/modules/http2/h2_c1.c:308
+        #16 0x5596139aeb28 in ap_run_pre_close_connection ~httpd/server/connection.c:45
+        #17 0x5596139af353 in ap_prep_lingering_close ~httpd/server/connection.c:128
+        #18 0x5596139af3f2 in ap_start_lingering_close ~httpd/server/connection.c:154
+        #19 0x7fdc7835bdf0 in process_lingering_close ~httpd/server/mpm/event/event.c:1999
+        #20 0x7fdc78359ccb in process_socket ~httpd/server/mpm/event/event.c:1540
+        #21 0x7fdc783608d7 in worker_thread ~httpd/server/mpm/event/event.c:2756
+        #22 0x7fdc7c5d3e57 in dummy_worker threadproc/unix/thread.c:153
+        #23 0x7fdc7c441d7f in start_thread nptl/pthread_create.c:481
+        #24 0x7fdc7c337bde in clone (/lib/x86_64-linux-gnu/libc.so.6+0xfcbde)
+    
+    0x603000080ce8 is located 8 bytes inside of 32-byte region [0x603000080ce0,0x603000080d00)
+    freed by thread T11 here:
+        #0 0x7fdc7c887f07 in __interceptor_free ../../../../src/libsanitizer/asan/asan_malloc_linux.cc:122
+        #1 0x7fdc7c5a5420 in pool_clear_debug memory/unix/apr_pools.c:1906
+        #2 0x7fdc7c5a562e in pool_destroy_debug memory/unix/apr_pools.c:1965
+        #3 0x7fdc7c5a5179 in pool_clear_debug memory/unix/apr_pools.c:1880
+        #4 0x7fdc7c5a562e in pool_destroy_debug memory/unix/apr_pools.c:1965
+        #5 0x7fdc7c5a5827 in apr_pool_destroy_debug memory/unix/apr_pools.c:2014
+        #6 0x7fdc789aeaa5 in h2_session_pre_close ~httpd/modules/http2/h2_session.c:1934
+        #7 0x7fdc7896a20e in h2_c1_pre_close ~httpd/modules/http2/h2_c1.c:188
+        #8 0x7fdc7896b538 in h2_c1_hook_pre_close ~httpd/modules/http2/h2_c1.c:308
+        #9 0x5596139aeb28 in ap_run_pre_close_connection ~httpd/server/connection.c:45
+        #10 0x5596139af353 in ap_prep_lingering_close ~httpd/server/connection.c:128
+        #11 0x5596139af3f2 in ap_start_lingering_close ~httpd/server/connection.c:154
+        #12 0x7fdc7835bdf0 in process_lingering_close ~httpd/server/mpm/event/event.c:1999
+        #13 0x7fdc78359ccb in process_socket ~httpd/server/mpm/event/event.c:1540
+        #14 0x7fdc783608d7 in worker_thread ~httpd/server/mpm/event/event.c:2756
+        #15 0x7fdc7c5d3e57 in dummy_worker threadproc/unix/thread.c:153
+        #16 0x7fdc7c441d7f in start_thread nptl/pthread_create.c:481
+    
+    previously allocated by thread T11 here:
+        #0 0x7fdc7c8882b8 in __interceptor_malloc ../../../../src/libsanitizer/asan/asan_malloc_linux.cc:144
+        #1 0x7fdc7c5a4d00 in pool_alloc memory/unix/apr_pools.c:1787
+        #2 0x7fdc7c5a507a in apr_palloc_debug memory/unix/apr_pools.c:1828
+        #3 0x7fdc7c4d8160 in apr_brigade_create buckets/apr_brigade.c:90
+        #4 0x7fdc7c4d82d8 in apr_brigade_split_ex buckets/apr_brigade.c:107
+        #5 0x7fdc78967f7c in h2_beam_receive ~httpd/modules/http2/h2_bucket_beam.c:729
+        #6 0x7fdc789b65f0 in buffer_output_receive ~httpd/modules/http2/h2_stream.c:847
+        #7 0x7fdc789bb655 in h2_stream_read_output ~httpd/modules/http2/h2_stream.c:1372
+        #8 0x7fdc789aa155 in on_stream_output ~httpd/modules/http2/h2_session.c:1313
+        #9 0x7fdc789956ba in mplx_pollset_poll ~httpd/modules/http2/h2_mplx.c:1299
+        #10 0x7fdc7898deb8 in h2_mplx_c1_poll ~httpd/modules/http2/h2_mplx.c:532
+        #11 0x7fdc789ae04b in h2_session_process ~httpd/modules/http2/h2_session.c:1863
+        #12 0x7fdc78969b0f in h2_c1_run ~httpd/modules/http2/h2_c1.c:138
+        #13 0x7fdc7896b302 in h2_c1_hook_process_connection ~httpd/modules/http2/h2_c1.c:286
+        #14 0x5596139ae4b6 in ap_run_process_connection ~httpd/server/connection.c:43
+        #15 0x7fdc78358d67 in process_socket ~httpd/server/mpm/event/event.c:1353
+        #16 0x7fdc783608d7 in worker_thread ~httpd/server/mpm/event/event.c:2756
+        #17 0x7fdc7c5d3e57 in dummy_worker threadproc/unix/thread.c:153
+        #18 0x7fdc7c441d7f in start_thread nptl/pthread_create.c:481
+    
+    Thread T11 created by T2 here:
+        #0 0x7fdc7c7baa22 in __interceptor_pthread_create ../../../../src/libsanitizer/asan/asan_interceptors.cc:208
+        #1 0x7fdc7c5d4534 in apr_thread_create threadproc/unix/thread.c:228
+        #2 0x7fdc7836273d in start_threads ~httpd/server/mpm/event/event.c:3035
+        #3 0x7fdc7c5d3e57 in dummy_worker threadproc/unix/thread.c:153
+        #4 0x7fdc7c441d7f in start_thread nptl/pthread_create.c:481
+    
+    Thread T2 created by T0 here:
+        #0 0x7fdc7c7baa22 in __interceptor_pthread_create ../../../../src/libsanitizer/asan/asan_interceptors.cc:208
+        #1 0x7fdc7c5d4534 in apr_thread_create threadproc/unix/thread.c:228
+        #2 0x7fdc78363d9f in child_main ~httpd/server/mpm/event/event.c:3262
+        #3 0x7fdc7836483b in make_child ~httpd/server/mpm/event/event.c:3421
+        #4 0x7fdc78364b89 in startup_children ~httpd/server/mpm/event/event.c:3444
+        #5 0x7fdc78368abc in event_run ~httpd/server/mpm/event/event.c:3932
+        #6 0x5596139b6d18 in ap_run_mpm ~httpd/server/mpm_common.c:101
+        #7 0x55961399098b in main ~httpd/server/main.c:880
+        #8 0x7fdc7c2627ec in __libc_start_main ../csu/libc-start.c:332
+    
+    SUMMARY: AddressSanitizer: heap-use-after-free ~httpd/modules/http2/h2_bucket_beam.c:279 in recv_buffer_cleanup
+    Shadow bytes around the buggy address:
+      0x0c0680008140: fa fa 00 00 00 00 fa fa fd fd fd fa fa fa fd fd
+      0x0c0680008150: fd fd fa fa fd fd fd fd fa fa fd fd fd fd fa fa
+      0x0c0680008160: fd fd fd fd fa fa fd fd fd fd fa fa fd fd fd fd
+      0x0c0680008170: fa fa fd fd fd fd fa fa fd fd fd fd fa fa fd fd
+      0x0c0680008180: fd fd fa fa fd fd fd fd fa fa fd fd fd fa fa fa
+    =>0x0c0680008190: fd fd fd fa fa fa fd fd fd fa fa fa fd[fd]fd fd
+      0x0c06800081a0: fa fa fd fd fd fd fa fa fd fd fd fd fa fa fd fd
+      0x0c06800081b0: fd fd fa fa fd fd fd fd fa fa fd fd fd fd fa fa
+      0x0c06800081c0: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+      0x0c06800081d0: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+      0x0c06800081e0: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+    Shadow byte legend (one shadow byte represents 8 application bytes):
+      Addressable:           00
+      Partially addressable: 01 02 03 04 05 06 07
+      Heap left redzone:       fa
+      Freed heap region:       fd
+      Stack left redzone:      f1
+      Stack mid redzone:       f2
+      Stack right redzone:     f3
+      Stack after return:      f5
+      Stack use after scope:   f8
+      Global redzone:          f9
+      Global init order:       f6
+      Poisoned by user:        f7
+      Container overflow:      fc
+      Array cookie:            ac
+      Intra object redzone:    bb
+      ASan internal:           fe
+      Left alloca redzone:     ca
+      Right alloca redzone:    cb
+      Shadow gap:              cc
+    ==81201==ABORTING
+    
+    
+    
+    git-svn-id: https://svn.apache.org/repos/asf/httpd/httpd/trunk@1897868 13f79535-47bb-0310-9956-ffa450edef68
+
+diff --git a/modules/http2/h2_bucket_beam.c b/modules/http2/h2_bucket_beam.c
+index 3e4b1e855e..9deb971e76 100644
+--- a/modules/http2/h2_bucket_beam.c
++++ b/modules/http2/h2_bucket_beam.c
+@@ -276,11 +276,13 @@ static void h2_blist_cleanup(h2_blist *bl)
+ 
+ static void recv_buffer_cleanup(h2_bucket_beam *beam)
+ {
+-    if (beam->recv_buffer && !APR_BRIGADE_EMPTY(beam->recv_buffer)) {
+-        apr_bucket_brigade *bb = beam->recv_buffer;
++    apr_bucket_brigade *bb = beam->recv_buffer;
++
++    beam->recv_buffer = NULL;
++
++    if (bb && !APR_BRIGADE_EMPTY(bb)) {
+         apr_off_t bblen = 0;
+         
+-        beam->recv_buffer = NULL;
+         apr_brigade_length(bb, 0, &bblen);
+         beam->recv_bytes += bblen;
+         
+@@ -297,27 +299,48 @@ static void recv_buffer_cleanup(h2_bucket_beam *beam)
+     }
+ }
+ 
+-static apr_status_t beam_cleanup(h2_bucket_beam *beam, int from_pool)
++static void beam_shutdown(h2_bucket_beam *beam, apr_shutdown_how_e how)
+ {
+-    beam->cons_io_cb = NULL;
+-    beam->recv_cb = NULL;
++    if (!beam->pool) {
++        /* pool being cleared already */
++        return;
++    }
+ 
+-    h2_blist_cleanup(&beam->buckets_to_send);
+-    recv_buffer_cleanup(beam);
+-    purge_consumed_buckets(beam);
+-    return APR_SUCCESS;
++    /* shutdown both receiver and sender? */
++    if (how == APR_SHUTDOWN_READWRITE) {
++        beam->cons_io_cb = NULL;
++        beam->recv_cb = NULL;
++    }
++
++    /* shutdown receiver (or both)? */
++    if (how != APR_SHUTDOWN_WRITE) {
++        recv_buffer_cleanup(beam);
++        beam->recv_cb = NULL;
++    }
++
++    /* shutdown sender (or both)? */
++    if (how != APR_SHUTDOWN_READ) {
++        h2_blist_cleanup(&beam->buckets_to_send);
++        purge_consumed_buckets(beam);
++    }
+ }
+ 
+-static apr_status_t beam_pool_cleanup(void *data)
++static apr_status_t beam_cleanup(void *data)
+ {
+-    return beam_cleanup(data, 1);
++    h2_bucket_beam *beam = data;
++    beam_shutdown(beam, APR_SHUTDOWN_READWRITE);
++    beam->pool = NULL; /* the pool is clearing now */
++    return APR_SUCCESS;
+ }
+ 
+ apr_status_t h2_beam_destroy(h2_bucket_beam *beam, conn_rec *c)
+ {
+-    apr_pool_cleanup_kill(beam->pool, beam, beam_pool_cleanup);
+-    H2_BEAM_LOG(beam, c, APLOG_TRACE2, 0, "destroy", NULL);
+-    return beam_cleanup(beam, 0);
++    if (beam->pool) {
++        H2_BEAM_LOG(beam, c, APLOG_TRACE2, 0, "destroy", NULL);
++        apr_pool_cleanup_run(beam->pool, beam, beam_cleanup);
++    }
++    H2_BEAM_LOG(beam, c, APLOG_TRACE2, 0, "destroyed", NULL);
++    return APR_SUCCESS;
+ }
+ 
+ apr_status_t h2_beam_create(h2_bucket_beam **pbeam, conn_rec *from,
+@@ -346,7 +369,7 @@ apr_status_t h2_beam_create(h2_bucket_beam **pbeam, conn_rec *from,
+     if (APR_SUCCESS != rv) goto cleanup;
+     rv = apr_thread_cond_create(&beam->change, pool);
+     if (APR_SUCCESS != rv) goto cleanup;
+-    apr_pool_pre_cleanup_register(pool, beam, beam_pool_cleanup);
++    apr_pool_pre_cleanup_register(pool, beam, beam_cleanup);
+ 
+ cleanup:
+     H2_BEAM_LOG(beam, from, APLOG_TRACE2, rv, "created", NULL);
+@@ -405,15 +428,14 @@ void h2_beam_abort(h2_bucket_beam *beam, conn_rec *c)
+             beam->was_empty_cb(beam->was_empty_ctx, beam);
+         }
+         /* no more consumption reporting to sender */
+-        beam->cons_io_cb = NULL;
+-        beam->cons_ctx = NULL;
+-        purge_consumed_buckets(beam);
+-        h2_blist_cleanup(&beam->buckets_to_send);
+         report_consumption(beam, 1);
++        beam->cons_ctx = NULL;
++
++        beam_shutdown(beam, APR_SHUTDOWN_WRITE);
+     }
+     else {
+         /* receiver aborts */
+-        recv_buffer_cleanup(beam);
++        beam_shutdown(beam, APR_SHUTDOWN_READ);
+     }
+     apr_thread_cond_broadcast(beam->change);
+     apr_thread_mutex_unlock(beam->lock);
+@@ -437,6 +459,8 @@ static apr_status_t append_bucket(h2_bucket_beam *beam,
+         goto cleanup;
+     }
+ 
++    ap_assert(beam->pool);
++
+     b = APR_BRIGADE_FIRST(bb);
+     if (APR_BUCKET_IS_METADATA(b)) {
+         APR_BUCKET_REMOVE(b);
+@@ -536,6 +560,8 @@ apr_status_t h2_beam_send(h2_bucket_beam *beam, conn_rec *from,
+     apr_size_t space_left = 0;
+     int was_empty;
+ 
++    ap_assert(beam->pool);
++
+     /* Called from the sender thread to add buckets to the beam */
+     apr_thread_mutex_lock(beam->lock);
+     ap_assert(beam->from == from);
+@@ -599,11 +625,13 @@ apr_status_t h2_beam_receive(h2_bucket_beam *beam,
+ 
+ transfer:
+     if (beam->aborted) {
+-        recv_buffer_cleanup(beam);
++        beam_shutdown(beam, APR_SHUTDOWN_READ);
+         rv = APR_ECONNABORTED;
+         goto leave;
+     }
+ 
++    ap_assert(beam->pool);
++
+     /* transfer enough buckets from our receiver brigade, if we have one */
+     while (remain >= 0
+            && beam->recv_buffer
+
+[ML] commit 7ecfc5b3a8f6e33ca5fb41f3c1c336c957646a19
+Author: Ruediger Pluem <rpluem@apache.org>
+Date:   Thu Oct 7 11:55:51 2021 +0000
+
+    * Fix memory leak in case of failures to load the private key.
+    
+    PR: 65620
+    
+    
+    git-svn-id: https://svn.apache.org/repos/asf/httpd/httpd/trunk@1893969 13f79535-47bb-0310-9956-ffa450edef68
+
+diff --git a/changes-entries/pr65620.txt b/changes-entries/pr65620.txt
+new file mode 100644
+index 0000000000..c14f275688
+--- /dev/null
++++ b/changes-entries/pr65620.txt
+@@ -0,0 +1,2 @@
++  *) mod_md: Fix memory leak in case of failures to load the private key.
++     PR 65620 [ Filipe Casal <filipe.casal@trailofbits.com> ]
+diff --git a/modules/md/md_crypt.c b/modules/md/md_crypt.c
+index 55826be860..1cb5c0473d 100644
+--- a/modules/md/md_crypt.c
++++ b/modules/md/md_crypt.c
+@@ -643,6 +643,7 @@ static apr_status_t pkey_to_buffer(md_data_t *buf, md_pkey_t *pkey, apr_pool_t *
+     const EVP_CIPHER *cipher = NULL;
+     pem_password_cb *cb = NULL;
+     void *cb_baton = NULL;
++    apr_status_t rv = APR_SUCCESS;
+     passwd_ctx ctx;
+     unsigned long err;
+     int i;
+@@ -651,7 +652,8 @@ static apr_status_t pkey_to_buffer(md_data_t *buf, md_pkey_t *pkey, apr_pool_t *
+         return APR_ENOMEM;
+     }
+     if (pass_len > INT_MAX) {
+-        return APR_EINVAL;
++        rv = APR_EINVAL;
++        goto cleanup;
+     }
+     if (pass && pass_len > 0) {
+         ctx.pass_phrase = pass;
+@@ -660,7 +662,8 @@ static apr_status_t pkey_to_buffer(md_data_t *buf, md_pkey_t *pkey, apr_pool_t *
+         cb_baton = &ctx;
+         cipher = EVP_aes_256_cbc();
+         if (!cipher) {
+-            return APR_ENOTIMPL;
++            rv = APR_ENOTIMPL;
++            goto cleanup;
+         }
+     }
+     
+@@ -670,11 +673,11 @@ static apr_status_t pkey_to_buffer(md_data_t *buf, md_pkey_t *pkey, apr_pool_t *
+ #else 
+     if (!PEM_write_bio_PrivateKey(bio, pkey->pkey, cipher, NULL, 0, cb, cb_baton)) {
+ #endif
+-        BIO_free(bio);
+         err = ERR_get_error();
+         md_log_perror(MD_LOG_MARK, MD_LOG_ERR, 0, p, "PEM_write key: %ld %s", 
+                       err, ERR_error_string(err, NULL)); 
+-        return APR_EINVAL;
++        rv = APR_EINVAL;
++        goto cleanup;
+     }
+ 
+     md_data_null(buf);
+@@ -684,8 +687,10 @@ static apr_status_t pkey_to_buffer(md_data_t *buf, md_pkey_t *pkey, apr_pool_t *
+         i = BIO_read(bio, (char*)buf->data, i);
+         buf->len = (apr_size_t)i;
+     }
++
++cleanup:
+     BIO_free(bio);
+-    return APR_SUCCESS;
++    return rv;
+ }
+ 
+ apr_status_t md_pkey_fsave(md_pkey_t *pkey, apr_pool_t *p, 
+
+[UAF] commit f6e5fbf7b75ab1d9c5f0d90f12b62c5eb07b9724
+Author: Joe Orton <jorton@apache.org>
+Date:   Wed Aug 18 09:57:48 2021 +0000
+
+    * server/mpm_unix.c (ap_reclaim_child_processes, ap_relieve_child_processes):
+      Fix use after free warning with gcc -fanalyzer.
+    
+    
+    git-svn-id: https://svn.apache.org/repos/asf/httpd/httpd/trunk@1892413 13f79535-47bb-0310-9956-ffa450edef68
+
+diff --git a/server/mpm_unix.c b/server/mpm_unix.c
+index 8c4d233792..ed4555ad0b 100644
+--- a/server/mpm_unix.c
++++ b/server/mpm_unix.c
+@@ -259,10 +259,12 @@ AP_DECLARE(void) ap_reclaim_child_processes(int terminate,
+         while (cur_extra) {
+             ap_generation_t old_gen;
+             extra_process_t *next = cur_extra->next;
++            pid_t pid = cur_extra->pid;
+ 
+-            if (reclaim_one_pid(cur_extra->pid, action_table[cur_action].action)) {
+-                if (ap_unregister_extra_mpm_process(cur_extra->pid, &old_gen) == 1) {
+-                    mpm_callback(-1, cur_extra->pid, old_gen);
++            if (reclaim_one_pid(pid, action_table[cur_action].action)) {
++                if (ap_unregister_extra_mpm_process(pid, &old_gen) == 1) {
++                    /* cur_extra dangling pointer from here. */
++                    mpm_callback(-1, pid, old_gen);
+                 }
+                 else {
+                     AP_DEBUG_ASSERT(1 == 0);
+@@ -307,10 +309,12 @@ AP_DECLARE(void) ap_relieve_child_processes(ap_reclaim_callback_fn_t *mpm_callba
+     while (cur_extra) {
+         ap_generation_t old_gen;
+         extra_process_t *next = cur_extra->next;
++        pid_t pid = cur_extra->pid;
+ 
+-        if (reclaim_one_pid(cur_extra->pid, DO_NOTHING)) {
+-            if (ap_unregister_extra_mpm_process(cur_extra->pid, &old_gen) == 1) {
+-                mpm_callback(-1, cur_extra->pid, old_gen);
++        if (reclaim_one_pid(pid, DO_NOTHING)) {
++            if (ap_unregister_extra_mpm_process(pid, &old_gen) == 1) {
++                /* cur_extra dangling pointer from here. */
++                mpm_callback(-1, pid, old_gen);
+             }
+             else {
+                 AP_DEBUG_ASSERT(1 == 0);
+
+[DF] commit 07e4fa6e5185659a0fcbf12dc88c9f23ff8d4860
+Author: Yann Ylavic <ylavic@apache.org>
+Date:   Wed Nov 25 01:56:17 2020 +0000
+
+    mod_auth_digest: fix crash with ONE_PROCESS (debug) mode shutdown.
+    
+    Avoid double free/cleanup by just letting shm/rmm/global_mutex cleanups do
+    their work on restart/exit.
+    
+    Set the globals to NULL in initialize_tables() should cleanup_tables() be
+    called on error.
+    
+    
+    git-svn-id: https://svn.apache.org/repos/asf/httpd/httpd/trunk@1883810 13f79535-47bb-0310-9956-ffa450edef68
+
+diff --git a/modules/aaa/mod_auth_digest.c b/modules/aaa/mod_auth_digest.c
+index 1209784278..480f43bf16 100644
+--- a/modules/aaa/mod_auth_digest.c
++++ b/modules/aaa/mod_auth_digest.c
+@@ -261,6 +261,12 @@ static int initialize_tables(server_rec *s, apr_pool_t *ctx)
+ 
+     /* Create the shared memory segment */
+ 
++    client_shm = NULL;
++    client_rmm = NULL;
++    client_lock = NULL;
++    opaque_lock = NULL;
++    client_list = NULL;
++
+     /*
+      * Create a unique filename using our pid. This information is
+      * stashed in the global variable so the children inherit it.
+@@ -407,8 +413,6 @@ static int initialize_module(apr_pool_t *p, apr_pool_t *plog,
+     if (initialize_tables(s, p) != OK) {
+         return !OK;
+     }
+-    /* Call cleanup_tables on exit or restart */
+-    apr_pool_cleanup_register(p, NULL, cleanup_tables, apr_pool_cleanup_null);
+ #endif  /* APR_HAS_SHARED_MEMORY */
+     return OK;
+ }
+
+[ML] commit 6944927d3fe2b00d30c8fed632ef6b16e4c7c172
+Author: Yann Ylavic <ylavic@apache.org>
+Date:   Sun Nov 22 22:37:43 2020 +0000
+
+    mod_case_filter_in: fix memory leak.
+    
+    Each ap_malloc()ed buffer should be free()d with its bucket.
+    
+    
+    git-svn-id: https://svn.apache.org/repos/asf/httpd/httpd/trunk@1883730 13f79535-47bb-0310-9956-ffa450edef68
+
+diff --git a/modules/examples/mod_case_filter_in.c b/modules/examples/mod_case_filter_in.c
+index 5116e3b9f6..c70a9eb9e6 100644
+--- a/modules/examples/mod_case_filter_in.c
++++ b/modules/examples/mod_case_filter_in.c
+@@ -114,7 +114,7 @@ static apr_status_t CaseFilterInFilter(ap_filter_t *f,
+             buf[n] = apr_toupper(data[n]);
+         }
+ 
+-        pbktOut = apr_bucket_heap_create(buf, len, 0, c->bucket_alloc);
++        pbktOut = apr_bucket_heap_create(buf, len, free, c->bucket_alloc);
+         APR_BRIGADE_INSERT_TAIL(pbbOut, pbktOut);
+         apr_bucket_delete(pbktIn);
+     }
+
+[ML] commit f6b252e3a292e4b64dcac689d2285fb87933bafe
+Author: Yann Ylavic <ylavic@apache.org>
+Date:   Wed Apr 15 12:25:27 2020 +0000
+
+    mod_ssl: Fix memory leak in stapling code. PR63687.
+    
+    Free issuer's X509 in ssl_stapling_init_cert()'s early return paths.
+    
+    Submitted by: icing
+    
+    
+    git-svn-id: https://svn.apache.org/repos/asf/httpd/httpd/trunk@1876548 13f79535-47bb-0310-9956-ffa450edef68
+
+diff --git a/CHANGES b/CHANGES
+index 9c5f258877..245f399f41 100644
+--- a/CHANGES
++++ b/CHANGES
+@@ -1,6 +1,8 @@
+                                                          -*- coding: utf-8 -*-
+ Changes with Apache 2.5.1
+ 
++  *) mod_ssl: Fix memory leak in stapling code. PR63687. [Stefan Eissing]
++
+   *) mod_proxy: Allow ProxyErrorOverride to be restricted to specific status 
+      codes.  PR63628. [Martin DrÃ¶Ãler <mail martindroessler.de>]
+ 
+diff --git a/modules/ssl/ssl_util_stapling.c b/modules/ssl/ssl_util_stapling.c
+index 46a3971bac..a8e5d5d61b 100644
+--- a/modules/ssl/ssl_util_stapling.c
++++ b/modules/ssl/ssl_util_stapling.c
+@@ -130,6 +130,7 @@ int ssl_stapling_init_cert(server_rec *s, apr_pool_t *p, apr_pool_t *ptemp,
+     X509 *issuer = NULL;
+     OCSP_CERTID *cid = NULL;
+     STACK_OF(OPENSSL_STRING) *aia = NULL;
++    int rv = 1; /* until further notice */
+ 
+     if (x == NULL)
+         return 0;
+@@ -154,16 +155,18 @@ int ssl_stapling_init_cert(server_rec *s, apr_pool_t *p, apr_pool_t *ptemp,
+             SSL_CTX_set_tlsext_status_cb(mctx->ssl_ctx, stapling_cb);
+             ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, s, APLOGNO(10177) "OCSP stapling added via hook");
+         }
+-        return 1;
++        goto cleanup;
+     }
+     
+     if (mctx->stapling_enabled != TRUE) {
+         /* mod_ssl's own implementation is not enabled */
+-        return 1;
++        goto cleanup;
+     }
+     
+-    if (X509_digest(x, EVP_sha1(), idx, NULL) != 1)
+-        return 0;
++    if (X509_digest(x, EVP_sha1(), idx, NULL) != 1) {
++        rv = 0;
++        goto cleanup;
++    }
+ 
+     cinf = apr_hash_get(stapling_certinfo, idx, sizeof(idx));
+     if (cinf) {
+@@ -177,18 +180,18 @@ int ssl_stapling_init_cert(server_rec *s, apr_pool_t *p, apr_pool_t *ptemp,
+                            APLOGNO(02814) "ssl_stapling_init_cert: no OCSP URI "
+                            "in certificate and no SSLStaplingForceURL "
+                            "configured for server %s", mctx->sc->vhost_id);
+-            return 0;
++            rv = 0;
+         }
+-        return 1;
++        goto cleanup;
+     }
+ 
+     cid = OCSP_cert_to_id(NULL, x, issuer);
+-    X509_free(issuer);
+     if (!cid) {
+         ssl_log_xerror(SSLLOG_MARK, APLOG_ERR, 0, ptemp, s, x, APLOGNO(02815)
+                        "ssl_stapling_init_cert: can't create CertID "
+                        "for OCSP request");
+-        return 0;
++        rv = 0;
++        goto cleanup;
+     }
+ 
+     aia = X509_get1_ocsp(x);
+@@ -197,7 +200,8 @@ int ssl_stapling_init_cert(server_rec *s, apr_pool_t *p, apr_pool_t *ptemp,
+         ssl_log_xerror(SSLLOG_MARK, APLOG_ERR, 0, ptemp, s, x,
+                        APLOGNO(02218) "ssl_stapling_init_cert: no OCSP URI "
+                        "in certificate and no SSLStaplingForceURL set");
+-        return 0;
++        rv = 0;
++        goto cleanup;
+     }
+ 
+     /* At this point, we have determined that there's something to store */
+@@ -218,8 +222,10 @@ int ssl_stapling_init_cert(server_rec *s, apr_pool_t *p, apr_pool_t *ptemp,
+                    mctx->sc->vhost_id);
+ 
+     apr_hash_set(stapling_certinfo, cinf->idx, sizeof(cinf->idx), cinf);
+-    
+-    return 1;
++
++cleanup:
++    X509_free(issuer);
++    return rv;
+ }
+ 
+ static certinfo *stapling_get_certinfo(server_rec *s, X509 *x, modssl_ctx_t *mctx,
+
+[ML] commit 1f776332c99b2a9c730aead6a225814c304b2173
+Author: Yann Ylavic <ylavic@apache.org>
+Date:   Thu Feb 27 12:43:51 2020 +0000
+
+    mod_ssl: Fix memory leak of OCSP stapling response.
+    
+    The OCSP_RESPONSE is either ignored or serialized (i2d_OCSP_RESPONSE) in the
+    TLS response/handshake extension, so it must be freed.
+    
+    
+    git-svn-id: https://svn.apache.org/repos/asf/httpd/httpd/trunk@1874577 13f79535-47bb-0310-9956-ffa450edef68
+
+diff --git a/CHANGES b/CHANGES
+index d5d0b5eb16..ee8150654e 100644
+--- a/CHANGES
++++ b/CHANGES
+@@ -1,6 +1,8 @@
+                                                          -*- coding: utf-8 -*-
+ Changes with Apache 2.5.1
+ 
++  *) mod_ssl: Fix memory leak of OCSP stapling response. [Yann Ylavic]
++
+   *) mod_authz_groupfile: Drop AH01666 from loglevel "error" to "info".
+      PR64172.
+ 
+diff --git a/modules/ssl/ssl_util_stapling.c b/modules/ssl/ssl_util_stapling.c
+index 8bb6e7c6c0..a1bc6f9116 100644
+--- a/modules/ssl/ssl_util_stapling.c
++++ b/modules/ssl/ssl_util_stapling.c
+@@ -873,15 +873,21 @@ static int stapling_cb(SSL *ssl, void *arg)
+     if (rsp && ((ok == TRUE) || (mctx->stapling_return_errors == TRUE))) {
+         ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, s, APLOGNO(01956)
+                      "stapling_cb: setting response");
+-        if (!stapling_set_response(ssl, rsp))
+-            return SSL_TLSEXT_ERR_ALERT_FATAL;
+-        return SSL_TLSEXT_ERR_OK;
++        if (!stapling_set_response(ssl, rsp)) {
++            rv = SSL_TLSEXT_ERR_ALERT_FATAL;
++        }
++        else {
++            rv = SSL_TLSEXT_ERR_OK;
++        }
+     }
+-    ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, s, APLOGNO(01957)
+-                 "stapling_cb: no suitable response available");
+-
+-    return SSL_TLSEXT_ERR_NOACK;
++    else {
++        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, s, APLOGNO(01957)
++                     "stapling_cb: no suitable response available");
++        rv = SSL_TLSEXT_ERR_NOACK;
++    }
++    OCSP_RESPONSE_free(rsp); /* NULL safe */
+ 
++    return rv;
+ }
+ 
+ apr_status_t modssl_init_stapling(server_rec *s, apr_pool_t *p,
+
+[ML] commit a4c4586997828c20bdccad6a290603592b9d2c30
+Author: Yann Ylavic <ylavic@apache.org>
+Date:   Thu Feb 27 12:34:03 2020 +0000
+
+    mod_ssl: Fix memory leak of OCSP stapling response.
+    
+    The OCSP_RESPONSE is either ignored or serialized (i2d_OCSP_RESPONSE) in the
+    TLS response/handshake extension, so it must be freed.
+    
+    
+    git-svn-id: https://svn.apache.org/repos/asf/httpd/httpd/trunk@1874574 13f79535-47bb-0310-9956-ffa450edef68
+
+diff --git a/CHANGES b/CHANGES
+index d5d0b5eb16..7a0d105911 100644
+--- a/CHANGES
++++ b/CHANGES
+@@ -1,6 +1,8 @@
+                                                          -*- coding: utf-8 -*-
+ Changes with Apache 2.5.1
+ 
++  *) mod_ssl: Fix memory leak of OCSP stapling response.  [Yann Ylavic]
++
+   *) mod_authz_groupfile: Drop AH01666 from loglevel "error" to "info".
+      PR64172.
+ 
+diff --git a/modules/ssl/ssl_util_stapling.c b/modules/ssl/ssl_util_stapling.c
+index 8bb6e7c6c0..32a838a07a 100644
+--- a/modules/ssl/ssl_util_stapling.c
++++ b/modules/ssl/ssl_util_stapling.c
+@@ -870,17 +870,25 @@ static int stapling_cb(SSL *ssl, void *arg)
+         }
+     }
+ 
+-    if (rsp && ((ok == TRUE) || (mctx->stapling_return_errors == TRUE))) {
+-        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, s, APLOGNO(01956)
+-                     "stapling_cb: setting response");
+-        if (!stapling_set_response(ssl, rsp))
+-            return SSL_TLSEXT_ERR_ALERT_FATAL;
+-        return SSL_TLSEXT_ERR_OK;
++    rv = SSL_TLSEXT_ERR_NOACK;
++    if (!rsp) {
++        ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, s, APLOGNO(01957)
++                     "stapling_cb: no suitable response available");
+     }
+-    ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, s, APLOGNO(01957)
+-                 "stapling_cb: no suitable response available");
+-
+-    return SSL_TLSEXT_ERR_NOACK;
++    else {
++        if (ok == TRUE || mctx->stapling_return_errors == TRUE) {
++            ap_log_error(APLOG_MARK, APLOG_DEBUG, 0, s, APLOGNO(01956)
++                         "stapling_cb: setting response");
++            if (!stapling_set_response(ssl, rsp)) {
++                rv = SSL_TLSEXT_ERR_ALERT_FATAL;
++            }
++            else {
++                rv = SSL_TLSEXT_ERR_OK;
++            }
++        }
++        OCSP_RESPONSE_free(rsp);
++    }
++    return rv;
+ 
+ }
+ 
+
