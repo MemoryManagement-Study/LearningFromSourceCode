@@ -119,242 +119,243 @@ Call Path Length,Application,Source File Path,API Name,API Type,Argument Count,R
 6,cpython,Parser/tokenizer.c,_PyTokenizer_FromUTF8,A,2,OBJECT,"IV, IV","CHAR*, INT",STRUCT*,,,2,redis,src/quicklist.c,_quicklistBookmarkDelete,D,2,N/A,"RD, RD","STRUCT*, STRUCT*",N/A,"STRUCT*, STRUCT*",N/A
 6,cpython,Parser/tokenizer.c,_PyTokenizer_FromFile,A,4,OBJECT,"IV, IV, IV, IV","FILE*, CHAR*, CHAR*, CHAR*",STRUCT*,,,2,redis,src/quicklist.c,quicklistBookmarksClear (multiple delete),D,1,N/A,RD ,STRUCT*,N/A,STRUCT*,N/A
 2,cpython,Parser/tokenizer.c,_PyManagedBuffer_FromObject,A,1,OBJECT,IV,STRUCT*,STRUCT*,,,2,redis,src/listpack.c,lpFree,D,1,N/A,OD ,CHAR*,N/A,CHAR*,N/A
-5,cpython,Objects/memoryobject.c,unpacker_new,A,0,OBJECT,N/A,N/A,STRUCT*,,,3,redis,src/t_zset.c,zslFreeNode,D,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
-0,cpython,Objects/dictobject.c,new_dict,MA,4,OBJECT,"IV, IV, IV, IV, RD","STRUCT*, STRUCT*, INT, INT",STRUCT*,,,2,redis,src/t_zset.c,zslFree,D,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
-1,cpython,Objects/dictobject.c,new_dict_with_shared_keys,A,1,OBJECT,IV,STRUCT*,STRUCT*,,,3,redis,src/t_zset.c,zslDeleteRangeByLex,D,3,removed count,"RD, RD, RD","STRUCT*, STRUCT*, STRUCT*",ULONG,"STRUCT*, STRUCT*, STRUCT*",ULONG
-1,cpython,Objects/dictobject.c,PyDict_New,A,0,OBJECT,N/A,N/A,STRUCT*,,,3,redis,src/t_zset.c,zslDeleteRangeByScore,D,3,removed count,"RD, RD, RD","CHAR*, STRUCT*, ULONG*",CHAR*,"CHAR*, STRUCT*, ULONG*",CHAR*
-2,cpython,Objects/dictobject.c,_PyDict_NewPresized,A,1,OBJECT,IV,INT,STRUCT*,,,3,redis,src/t_zset.c,zslDeleteRangeByRank,D,4,removed count,"RD, RD, RD, RD","STRUCT*, INT, INT, STRUCT*",CHAR*,"STRUCT*, INT, INT, STRUCT*",CHAR*
-3,cpython,Objects/dictobject.c,dict_copy,A,1,OBJECT,"IV, unused",STRUCT*,STRUCT*,,,3,redis,src/object.c,freeStringObject,D,1,N/A,RD,STRUCT*,N/A,STRUCT*,N/A
-2,cpython,Objects/dictobject.c,PyDict_Copy,A,1,OBJECT,IV,STRUCT*,STRUCT*,,,3,redis,src/object.c,freeListObject,D,1,N/A,RD,STRUCT*,N/A,STRUCT*,N/A
-0,cpython,Objects/dictobject.c,new_keys_object,MA,1,OBJECT,AS,INT,STRUCT*,,,3,redis,src/object.c,freeSetObject,D,1,N/A,RD,STRUCT*,N/A,STRUCT*,N/A
-5,cpython,Objects/dictobject.c,new_values ,A,1,OBJECT,AS,INT,STRUCT*,,,3,redis,src/object.c,freeZsetObject,D,1,N/A,RD,STRUCT*,N/A,STRUCT*,N/A
-2,cpython,Objects/dictobject.c,_PyDictView_New,A,2,OBJECT,"IV, IV","STRUCT*, STRUCT*",STRUCT*,,,3,redis,src/object.c,freeHashObject,D,1,N/A,RD,STRUCT*,N/A,STRUCT*,N/A
-3,cpython,Objects/dictobject.c,dictkeys_new,A,2,OBJECT,"IV, IV","STRUCT*, STRUCT*",STRUCT*,,,2,redis,src/object.c,freeModuleObject,D,1,N/A,RD,STRUCT*,N/A,STRUCT*,N/A
-3,cpython,Objects/dictobject.c,dictitems_new,A,2,OBJECT,"IV, IV","STRUCT*, STRUCT*",STRUCT*,,,3,redis,src/object.c,freeStreamObject,D,1,N/A,RD,STRUCT*,N/A,STRUCT*,N/A
-3,cpython,Objects/dictobject.c,dictvalues_new,A,2,OBJECT,"IV, IV","STRUCT*, STRUCT*",STRUCT*,,,4,redis,src/object.c,decrRefCount,D,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
-2,cpython,Objects/dictobject.c,dictiter_new,A,2,OBJECT,"IV, IV","STRUCT*, STRUCT*",STRUCT*,,,0,redis,src/object.c,dismissMemory,MD,2,N/A,"OD, RD","VOID*, INT",N/A,"VOID*, INT",N/A
-3,cpython,Objects/dictobject.c,dictkeys_reversed,A,2,OBJECT,"IV, unused","STRUCT*, STRUCT*",STRUCT*,,,1,redis,src/object.c,dismissSds,D,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
-3,cpython,Objects/dictobject.c,dictvalues_reversed,A,2,OBJECT,"IV, unused","STRUCT*, STRUCT*",STRUCT*,,,2,redis,src/object.c,dismissStringObject,D,1,N/A,RD,STRUCT*,N/A,STRUCT*,N/A
-3,cpython,Objects/dictobject.c,dictitems_reversed,A,2,OBJECT,"IV, unused","STRUCT*, STRUCT*",STRUCT*,,,1,redis,src/object.c,dismissListObject,D,2,N/A,"RD, RD","STRUCT*, INT",N/A,"STRUCT*, INT",N/A
-3,cpython,Objects/dictobject.c,dict_iter,A,1,OBJECT,IV,STRUCT*,STRUCT*,,,2,redis,src/object.c,dismissSetObject,D,2,N/A,"RD, RD","STRUCT*, INT",N/A,"STRUCT*, INT",N/A
-3,cpython,Objects/dictobject.c,dictkeys_iter,A,1,OBJECT,IV,STRUCT*,STRUCT*,,,2,redis,src/object.c,dismissZsetObject,D,2,N/A,"RD, RD","STRUCT*, INT",N/A,"STRUCT*, INT",N/A
-3,cpython,Objects/dictobject.c,dictvalues_iter,A,1,OBJECT,IV,STRUCT*,STRUCT*,,,2,redis,src/object.c,dismissHashObject,D,2,N/A,"RD, RD","STRUCT*, INT",N/A,"STRUCT*, INT",N/A
-3,cpython,Objects/dictobject.c,dictitems_iter,A,1,OBJECT,IV,STRUCT*,STRUCT*,,,1,redis,src/object.c,dismissStreamObject,D,2,N/A,"RD, RD","STRUCT*, INT",N/A,"STRUCT*, INT",N/A
-6,cpython,Objects/dictobject.c,PyByteArray_FromStringAndSize,A,2,OBJECT,"IV, IV","CHAR*, INT",STRUCT*,,,3,redis,src/object.c,dismissObject,D,2,N/A,"RD, RD","STRUCT*, INT",N/A,"STRUCT*, INT",N/A
-7,cpython,Objects/bytearrayobject.c,_PyByteArray_FromBufferObject,A,1,OBJECT,IV,STRUCT*,STRUCT*,,,0,redis,src/object.c,decrRefCountVoid,MD,1,N/A,OD,VOID*,N/A,VOID*,N/A
-2,cpython,Objects/bytearrayobject.c,bytearray_iter,A,1,OBJECT,IV,STRUCT*,STRUCT*,,,2,redis,src/object.c,freeMemoryOverheadData,D,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
-5,cpython,Objects/bytesobject.c,_PyBytes_FromSize,A,2,OBJECT,"AS, RD","INT, INT",STRUCT*,,,2,redis,src/object.c,freeCallReplyInternal,D,1,N/A,RD  ,STRUCT*,N/A,STRUCT*,N/A
-6,cpython,Objects/bytesobject.c,PyBytes_FromStringAndSize,A,2,OBJECT,"AS, IV","CHAR*, INT",STRUCT*,,,2,redis,src/object.c,freeCallReply,D,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
-5,cpython,Objects/bytesobject.c,PyBytes_FromString,A,1,OBJECT,IV,CHAR*,STRUCT*,,,2,redis,src/object.c,freeClusterLink,D,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
-3,cpython,Objects/bytesobject.c,bytes_subtype_new,A,2,OBJECT,"IV, IV","STRUCT*, STRUCT*",STRUCT*,,,2,redis,src/object.c,freeClusterNode,D,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
-2,cpython,Objects/bytesobject.c,bytes_iter,A,1,OBJECT,IV,STRUCT*,STRUCT*,,,3,redis,src/cluster.c,clusterDelNode,D,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
-0,cpython,Python/pyarena.c,_PyArena_Malloc,MA,2,OBJECT,"RD, AS","STRUCT*, INT",VOID*,,,3,redis,src/cluster.c,clusterBlacklistCleanup,D,0,N/A,N/A,N/A,N/A,N/A,N/A
-0,cpython,Python/pyarena.c,_PyArena_New,MA,0,OBJECT,N/A,N/A,STRUCT*,,,2,redis,src/cluster.c,slotToKeyDestroy,D,1,N/A,RD,STRUCT*,N/A,STRUCT*,N/A
-0,cpython,Python/pyarena.c,block_new,MA,1,OBJECT,AS,INT,STRUCT*,,,2,redis,src/sentinel.c,redisAeCleanup,D,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
-0,cpython,Python/pyarena.c,block_alloc,MA,2,OBJECT,"RD, AS","STRUCT*, INT",VOID*,,,2,redis,src/sentinel.c,freeSentinelLoadQueueEntry,D,1,N/A,OD,VOID*,N/A,VOID*,N/A
-1,redis,src/zmalloc.c,ztrymalloc_usable,A,2,OBJECT,"AS, RD","INT, INT*",VOID*,,,2,redis,src/sentinel.c,releaseSentinelAddr,D,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
-2,redis,src/zmalloc.c,zmalloc,A,1,OBJECT,AS ,INT,VOID*,,,2,redis,src/sentinel.c,freeSentinelConfig,D,0,N/A,N/A,N/A,N/A,N/A,N/A
-2,redis,src/zmalloc.c,ztrymalloc ,A,1,OBJECT,AS,INT,VOID*,,,2,redis,src/replication.c,freeReplicationBacklog,D,0,N/A,N/A,N/A,N/A,N/A,N/A
-2,redis,src/zmalloc.c,zmalloc_usable,A,2,OBJECT,"AS, RD","INT, INT*",VOID*,,,3,redis,src/replication.c,replicationUnsetMaster,D,0,N/A,N/A,N/A,N/A,N/A,N/A
-1,redis,src/zmalloc.c,zmalloc_no_tcache,A,1,OBJECT,AS,INT,VOID*,,,2,redis,src/networking.c,freeClientReplyValue,D,1,N/A,OD,VOID*,N/A,VOID*,N/A
-1,redis,src/zmalloc.c,ztrycalloc_usable,A,2,OBJECT,"AS, RD","INT, INT*",VOID*,,,2,redis,src/networking.c,moduleCloseKey,D,1,N/A,RD,STRUCT*,N/A,STRUCT*,N/A
-2,redis,src/zmalloc.c,zcalloc,A,1,OBJECT,AS,INT,VOID*,,,2,redis,src/networking.c,listRelease,D,1,N/A,RD,STRUCT*,N/A,STRUCT*,N/A
-2,redis,src/zmalloc.c,ztrycalloc,A,1,OBJECT,AS,INT,VOID*,,,3,redis,src/networking.c,disconnectSlaves,D,0,N/A,N/A,N/A,N/A,N/A,N/A
-2,redis,src/zmalloc.c,zcalloc_usable,A,2,OBJECT,"AS, RD","INT, INT*",VOID*,,,2,redis,src/networking.c,freeClient,D,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
-1,redis,src/zmalloc.c,ztryrealloc_usable,A,3,OBJECT,"IV, AS, RD","VOID*, INT, PTR",VOID*,,,2,redis,src/networking.c,freeClientOriginalArgv,D,1,N/A,RD,STRUCT*,N/A,STRUCT*,N/A
-2,redis,src/zmalloc.c,zrealloc,RA,2,OBJECT,"IV, AS ","VOID*, INT",VOID*,,,2,redis,src/networking.c,freeClientArgv,D,1,N/A,RD,STRUCT*,N/A,STRUCT*,N/A
-2,redis,src/zmalloc.c,ztryrealloc,RA,2,OBJECT,"IV, AS","VOID*, INT",VOID*,,,0,redis,src/networking.c,freeClientAsync,MD,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
-2,redis,src/zmalloc.c,zrealloc_usable,RA,3,OBJECT,"IV, AS, RD","VOID*, INT, INT*",VOID*,,,0,redis,src/networking.c,freeClientsInAsyncFreeQueue,MD,0,N/A,N/A,N/A,N/A,N/A,N/A
-3,redis,src/zmalloc.c,zstrdup,A,1,OBJECT,IV,CHAR*,CHAR*,,,2,redis,src/sparkline.c,freeSparklineSequence,D,1,N/A,RD,STRUCT*,N/A,STRUCT*,N/A
-3,redis,src/dict.c,dictCreate,A,1,OBJECT,IV,STRUCT*,STRUCT*,,,3,redis,src/redis-cli.c,freeHintsCallback,D,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
-4,redis,src/dict.c,dictExpand,RA,2,SUCCESS FLAG,"RD, AS, RD","STRUCT*, LONG",INT,,,2,redis,src/redis-cli.c,freeClusterManagerNode,D,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
-3,redis,src/dict.c,dictGetIterator,A,1,OBJECT,IV,STRUCT*,STRUCT*,,,2,redis,src/t_hash.c,hashTypeReleaseIterator,D,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
-4,redis,src/dict.c,dictGetSafeIterator,A,1,OBJECT,IV,STRUCT*,STRUCT*,,,2,redis,src/object.c,freeStream,D,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
-3,redis,src/dict.c,dictAddRaw,A,3,OBJECT,"RD, IV, RD","STRUCT*, VOID*, STRUCT**",STRUCT*,,,2,redis,src/t_stream.c,streamFreeNACK,D,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
-4,redis,src/dict.c,dictAdd,A,3,SUCCESS FLAG,"RD, IV, RD","STRUCT*, VOID*, VOID*",INT,,,2,redis,src/t_stream.c,streamFreeCG,D,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
-3,redis,src/sds.c,sds_malloc,A,1,OBJECT,AS,INT,VOID*,,,2,redis,src/t_stream.c,streamFreeConsumer,D,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
-3,redis,src/sds.c,sds_realloc,RA,2,OBJECT,"IV, AS","VOID*, INT",VOID*,,,2,redis,deps/hihiredis.c,redisFree,D,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
-3,redis,src/sds.c,_sdsnewlen,A,3,OBJECT,"IV, IV, IV","VOID*, INT, INT",STRUCT*,,,2,redis,deps/hihiredis.c,freeReplyObject,D,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
-4,redis,src/sds.c,sdsnewlen,A,2,OBJECT,"IV, AS","VOID*, INT",STRUCT*,,,1,redis,deps/hialloc.c,hi_free,D,1,N/A,OD,VOID*,N/A,VOID*,N/A
-4,redis,src/sds.c,sdstrynewlen,A,2,OBJECT,"RD, IV, RD","VOID*, INT",STRUCT*,,,0,httpd,memory/unix/apr_pools.c,allocator_free,MD,2,N/A,"RD, OD","STRUCT*, STRUCT*",N/A,"STRUCT*, STRUCT*",N/A
-4,redis,src/sds.c,sdsfromlonglong,a,1,OBJECT,IV,LONGLONG,STRUCT*,,,1,httpd,memory/unix/apr_pools.c,apr_allocator_free,D,2,N/A,"RD, OD","STRUCT*, STRUCT*",N/A,"STRUCT*, STRUCT*",N/A
-4,redis,src/sds.c,sdsempty,A,0,OBJECT,N/A,N/A,STRUCT*,,,0,httpd,memory/unix/apr_pools.c,apr_pool_clear,MD,1,N/A,RD,STRUCT*,N/A,STRUCT*,N/A
-4,redis,src/sds.c,sdsnew,A,1,OBJECT,IV,CHAR*,STRUCT*,,,0,httpd,memory/unix/apr_pools.c,apr_pool_destroy,MD,1,N/A,RD,STRUCT*,N/A,STRUCT*,N/A
-4,redis,src/sds.c,sdsdup,A,1,OBJECT,IV,STRUCT*,STRUCT*,,,1,httpd,memory/unix/apr_pools.c,pool_clear_debug,D,2,N/A,"RD, unused unused","STRUCT*, CHAR*",N/A,"STRUCT*, CHAR*",N/A
-3,redis,src/sds.c,_sdsMakeRoomFor,RA,3,OBJECT,"IV, AS, RD","STRUCT*, INT, INT",STRUCT*,,,1,httpd,memory/unix/apr_pools.c,apr_pool_clear_debug,D,2,N/A,"RD, unused unused","STRUCT*, CHAR*",N/A,"STRUCT*, CHAR*",N/A
-4,redis,src/sds.c,sdsMakeRoomFor,RA,2,OBJECT,"IV, AS, RD","STRUCT*, INT",STRUCT*,,,0,httpd,shmem/unix/shm.c,apr_shm_remove,MD,2,SUCCESS FLAG,"OD, RD (unused)","CHAR*, STRUCT*",INT,"CHAR*, STRUCT*",INT
-4,redis,src/sds.c,sdsMakeRoomForNonGreedy,RA,2,OBJECT,"IV, AS, RD","STRUCT*, INT",STRUCT*,,,1,httpd,shmem/unix/shm.c,apr_shm_delete,D,1,SUCCESS FLAG,OD,STRUCT*,INT,STRUCT*,INT
-3,redis,src/sds.c,sdsResize,RA,2,OBJECT,"IV, AS","STRUCT*, INT",STRUCT*,,,1,httpd,shmem/unix/shm.c,apr_shm_destroy,D,1,SUCCESS FLAG,OD,STRUCT*,INT,STRUCT*,INT
-3,redis,src/module.c,RM_Alloc,A,1,OBJECT,AS,INT,VOID*,,,0,httpd,shmem/unix/shm.c,shm_cleanup_owner,MD,1,SUCCESS FLAG,OD,STRUCT*,INT,STRUCT*,INT
-3,redis,src/module.c,RM_Calloc,A,2,OBJECT,"AS, AS","INT, INT",VOID*,,,0,httpd,tables/apr_skiplist.c,apr_skiplist_free,MD,2,N/A,"RD, OD","STRUCT*, void*",N/A,"STRUCT*, void*",N/A
-3,redis,src/module.c,RM_Realloc,RA,2,OBJECT,"IV, AS","STRUCT*, INT",VOID*,,,1,httpd,tables/apr_skiplist.c,apr_skiplist_destroy,D,2,N/A,"OD, RD","STRUCT*, FUNCP",N/A,"STRUCT*, FUNCP",N/A
-4,redis,src/module.c,RM_Strdup,A,1,OBJECT,IV,CHAR*,CHAR*,,,1,httpd,tables/apr_skiplist.c,apr_skiplist_remove_all,D,2,N/A,"RD, RD","STRUCT*, FUNCP",N/A,"STRUCT*, FUNCP",N/A
-0,redis,src/module.c,RM_PoolAlloc,MA,2,OBJECT,"RD, AS","STRUCT*, INT",VOID*,,,2,httpd,tables/apr_skiplist.c,skiplisti_destroy,D,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
-3,redis,src/module.c,RM_SetModuleAttribs,A,4,OBJECT,"RD, IV, IV, IV","STRUCT*, CHAR*, INT, INT",N/A,,,1,httpd,mmap/unix/mmap.c,mmap_cleanup,D,1,SUCCESS FLAG,OD,STRUCT*,INT,STRUCT*,INT
-5,redis,src/module.c,RM_CreateString,A,3,OBJECT,"RD, IV, IV","STRUCT*, CHAR*, INT",STRUCT*,,,2,httpd,mmap/unix/mmap.c,apr_mmap_delete,D,1,SUCCESS FLAG,OD,STRUCT*,INT,STRUCT*,INT
-4,redis,src/module.c,RM_CreateStringPrintf,A,2+,OBJECT,"RD, IV","STRUCT*, CHAR*",STRUCT*,,,1,httpd,buckets/apr_brigade.c,apr_brigade_cleanup,D,1,SUCCESS FLAG,OD,STRUCT*,INT,STRUCT*,INT
-6,redis,src/module.c,RM_CreateStringFromLongLong,A,2,OBJECT,"RD, IV","STRUCT*, LONGLONG",STRUCT*,,,3,httpd,buckets/apr_brigade.c,apr_brigade_destroy,D,1,SUCCESS FLAG,OD,STRUCT*,INT,STRUCT*,INT
-6,redis,src/module.c,RM_CreateStringFromDouble,A,2,OBJECT,"RD, IV","STRUCT*, DOUB",STRUCT*,,,2,httpd,buckets/apr_brigade.c,brigade_cleanup,D,1,SUCCESS FLAG,OD,STRUCT*,INT,STRUCT*,INT
-6,redis,src/module.c,RM_CreateStringFromLongDouble,A,3,OBJECT,"RD, IV, IV","STRUCT*, LONGDOUB, INT",STRUCT*,,,1,httpd,buckets/apr_buckets_alloc.c,alloc_cleanup,D,1,SUCCESS FLAG,RD,STRUCT*,INT,STRUCT*,INT
-6,redis,src/module.c,RM_CreateStringFromString,A,2,OBJECT,"RD, IV","STRUCT*, STRUCT*",STRUCT*,,,1,httpd,buckets/apr_buckets_alloc.c,apr_bucket_alloc_destroy,D,1,N/A,RD,STRUCT*,N/A,STRUCT*,N/A
-5,redis,src/module.c,RM_CreateStringFromStreamID,A,2,OBJECT,"RD, IV","STRUCT*, STRUCT*",STRUCT*,,,0,httpd,buckets/apr_buckets_alloc.c,apr_bucket_free,MD,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
-3,redis,src/module.c,RM_CreateDict,A,1,OBJECT,RD,STRUCT*,STRUCT*,,,1,httpd,buckets/apr_buckets_file.c,file_bucket_destroy,D,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
-3,redis,src/module.c,RM_GetServerInfo,A,2,OBJECT,"RD, IV","STRUCT*, CHAR*",STRUCT*,,,1,httpd,buckets/apr_buckets_mmap.c,mmap_bucket_destroy,D,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
-3,redis,src/module.c,RM_GetDetachedThreadSafeContext,A,1,OBJECT,IV,STRUCT*,STRUCT*,,,1,httpd,buckets/apr_buckets_pool.c,pool_bucket_destroy,D,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
-3,redis,src/module.c,RM_CreateModuleUser,A,1,OBJECT,IV,CHAR*,STRUCT*,,,1,httpd,crypto/apr_crypto_commoncrypto.c,crypto_block_cleanup,D,1,SUCCESS FLAG,RD ,STRUCT*,INT,STRUCT*,INT
-3,redis,src/module.c,moduleCreateCommandProxy,A,7,OBJECT,"RD, IV IV, IV, IV, IV, IV","STRUCT*, STRUCT*, FUNCP, INT, INT, INT, INT",STRUCT*,,,1,httpd,crypto/apr_crypto_openssl.c,EVP_CIPHER_CTX_free,D,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
-5,redis,src/module.c,moduleCreateEmptyKey,A,2,SUCCESS FLAG,"RD, IV","STRUCT*, INT",INT,,,2,httpd,crypto/apr_crypto_commoncrypto.c,crypto_block_cleanup,D,1,SUCCESS FLAG,RD,STRUCT*,INT,STRUCT*,INT
-3,redis,src/module.c,RM_OpenKey,A,3,OBJECT,"RD, IV, IV","STRUCT*, STRUCT*, INT",STRUCT*,,,2,httpd,crypto/apr_crypto_nss.c,crypto_block_cleanup_helper,D,1,SUCCESS FLAG,RD,STRUCT*,INT,STRUCT*,INT
-3,redis,src/t_list.c,listTypeInitIterator,A,3,OBJECT,"IV, IV, IV","STRUCT*, LONG, CHAR",STRUCT*,,,1,httpd,dbd/apr_dbd_mysql.c,lob_bucket_destroy,D,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
-4,redis,src/t_list.c,listTypeDup,A,1,OBJECT,IV,STRUCT*,STRUCT*,,,1,httpd,dbd/apr_dbd_odbc.c,odbc_lob_bucket_destroy,D,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
-3,redis,src/quicklist.c,quicklistCreate,A,0,OBJECT,N/A,N/A,PTR,,,2,httpd,server/util.c,regex_cleanup,D,1,SUCCESS FLAG,OD,STRUCT*,INT,STRUCT*,INT
-4,redis,src/quicklist.c,quicklistNew,A,2,OBJECT,"IV, IV","INT, INT",PTR,,,2,httpd,server/util.c,ap_pregfree,D,2,N/A,"RD, OD","STRUCT*, STRUCT*",N/A,"STRUCT*, STRUCT*",N/A
-4,redis,src/quicklist.c,quicklistDup,A,1,OBJECT,IV,PTR,PTR,,,1,httpd,server/util.c,varbuf_cleanup,D,1,SUCCESS FLAG,RD,void*,INT,void*,INT
-4,redis,src/quicklist.c,quicklistCreateNode,A,0,OBJECT,N/A,N/A,PTR,,,1,httpd,server/util.c,ap_varbuf_free,D,1,N/A,RD,STRUCT*,N/A,STRUCT*,N/A
-5,redis,src/quicklist.c,__quicklistCreatePlainNode,A,2,OBJECT,"IV, IV","PTR, INT",PTR,,,1,httpd,server/util_pcre.c,ap_regfree,D,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
-4,redis,src/quicklist.c,quicklistAppendListpack,A,2,N/A,"RD, IV","PTR, CHAR*",N/A,,,0,memcached,slabs.c,do_slabs_free_chunked,MD,2,N/A,"OD, RD","PTR, INT",N/A,"PTR, INT",N/A
-5,redis,src/quicklist.c,quicklistAppendPlainNode,A,3,N/A,"RD, IV, IV","PTR, CHAR*, INT",N/A,,,0,memcached,slabs.c,do_slabs_free,MD,3,N/A,"OD, RD, RD","VOID*, INT, INT",N/A,"VOID*, INT, INT",N/A
-3,redis,src/quicklist.c,quicklistGetIterator,A,2,OBJECT,"RD, IV","PTR, INT",STRUCT*,,,1,memcached,slabs.c,slabs_free,D,3,N/A,"OD, RD, RD","VOID*, INT, INT",N/A,"VOID*, INT, INT",N/A
-4,redis,src/quicklist.c,quicklistGetIteratorAtIdx,A,3,OBJECT,"RD, IV, IV","PTR, INT, INT",STRUCT*,,,2,memcached,slabs.c,slab_rebalance_cut_free,MD,2,N/A,"RD, OD","STRUCT*, STRUCT*",N/A,"STRUCT*, STRUCT*",N/A
-5,redis,src/quicklist.c,quicklistGetIteratorEntryAtIdx,A,3,OBJECT,"RD, IV, IV","PTR, INT, PTR",STRUCT*,,,3,memcached,items.c,item_free,D,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
-3,redis,src/quicklist.c,_quicklistSaver,A,2,OBJECT,"AS, IV","CHAR*, INT",STRUCT*,,,1,memcached,items.c,do_item_remove,D,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
-3,redis,src/intset.c,intsetNew,A,0,OBJECT,N/A,N/A,STRUCT*,,,1,memcached,slab_automove.c,slab_automove_free,D,1,N/A,OD,VOID*,N/A,VOID*,N/A
-2,redis,src/intset.c,intsetResize,RA,2,OBJECT,"IV, AS","PTR, INT",STRUCT*,,,1,memcached,slab_automove.c,slab_automove_extstore_free,D,1,N/A,OD,VOID*,N/A,VOID*,N/A
-4,redis,src/intset.c,createSet,A,2,OBJECT,"IV, IV","INT, INT",STRUCT*,,,1,memcached,bipbuffer.c,bipbuf_free,D,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
-3,redis,src/listpack.c,lpNew,A,1,OBJECT,AS,INT,STRUCT*,,,1,memcached,memcached.c,conn_free,D,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
-3,redis,src/listpack.c,lpShrinkToFit,RA,1,OBJECT,IV,PTR,STRUCT*,,,2,memcached,memcached.c,rbuf_release,D,1,N/A,RD,STRUCT*,N/A,STRUCT*,N/A
-4,redis,src/listpack.c,createList,A,0,OBJECT,N/A,N/A,STRUCT*,,,0,memcached,cache.c,cache_destroy,MD,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
-4,redis,src/listpack.c,createIntList,A,0,OBJECT,N/A,N/A,STRUCT*,,,1,memcached,cache.c,cache_free,D,2,N/A,"RD, OD","STRUCT*, VOID*",N/A,"STRUCT*, VOID*",N/A
-3,redis,src/t_zset.c,zslCreateNode,A,3,OBJECT,"AS, IV, IV","INT, DOUB, STRUCT",STRUCT*,,,0,memcached,cache.c,do_cache_free,MD,2,N/A,"RD, OD","STRUCT*, VOID*",N/A,"STRUCT*, VOID*",N/A
-3,redis,src/t_zset.c,zslCreate,A,0,OBJECT,N/A,N/A,STRUCT*,,,4,memcached,thread.c,item_remove,D,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
-3,redis,src/object.c,createObject,A,2,OBJECT,"IV, IV","INT, PTR",STRUCT*,,,0,ffmpeg,libavutil/mem.c,av_free,D,1,N/A,OD,,,void*,N/A
-4,redis,src/object.c,createRawStringObject,A,2,OBJECT,"IV, IV","CHAR*, INT",STRUCT*,,,1,ffmpeg,libavutil/mem.c,av_freep,D,1,N/A,OD,,,void*,N/A
-3,redis,src/object.c,createEmbeddedStringObject,A,2,OBJECT,"IV, IV","CHAR*, INT",STRUCT*,,,1,ffmpeg,libavutil/audio_fifo.c,av_audio_fifo_free,D,1,N/A,OD,,,ptr,N/A
-4,redis,src/object.c,createStringObject,A,2,OBJECT,"IV, IV","CHAR*, INT",STRUCT*,,,2,ffmpeg,libavutil/fifo.c,av_fifo_freep2,D,1,N/A,OD,,,ptr,N/A
-4,redis,src/object.c,tryCreateRawStringObject,A,2,OBJECT,"IV, IV","CHAR*, INT",STRUCT*,,,1,ffmpeg,libavutil/fifo.c,av_fifo_free,D,1,N/A,OD,,,ptr,N/A
-4,redis,src/object.c,tryCreateStringObject,A,2,OBJECT,"IV, IV","CHAR*, INT",STRUCT*,,,2,ffmpeg,libavutil/fifo.c,av_fifo_freep,D,1,N/A,OD,,,ptr,N/A
-4,redis,src/object.c,createStringObjectFromLongLongWithOptions,A,2,OBJECT,"IV, IV","INT, INT",STRUCT*,,,2,ffmpeg,libavutil/dict.c,av_dict_free,D,1,N/A,OD,,,ptr,N/A
-5,redis,src/object.c,createStringObjectFromLongLong,A,1,OBJECT,IV,INT,STRUCT*,,,2,ffmpeg,libavutil/hwcontext_cuda.c,cuda_device_uninit,D,1,N/A,RD,,,ptr,N/A
-5,redis,src/object.c,createStringObjectFromLongLongForValue,A,1,OBJECT,IV,INT,STRUCT*,,,1,ffmpeg,libavutil/buffer.c,av_buffer_default_free,D,2,N/A,"not used, OD",,,"void*, ptr",N/A
-5,redis,src/object.c,createStringObjectFromLongDouble,A,2,OBJECT,"IV, IV","DOUB, INT",STRUCT*,,,2,ffmpeg,libavutil/buffer.c,av_buffer_unref,D,1,N/A,OD,,,ptr,N/A
-5,redis,src/object.c,dupStringObject,A,1,OBJECT,IV,PTR,STRUCT*,,,2,ffmpeg,libavutil/buffer.c,buffer_pool_flush,D,1,N/A,RD,,,ptr,N/A
-4,redis,src/object.c,createQuicklistObject,A,0,OBJECT,N/A,N/A,STRUCT*,,,2,ffmpeg,libavutil/buffer.c,buffer_pool_free,D,1,N/A,OD,,,ptr,N/A
-4,redis,src/object.c,createSetObject,A,0,OBJECT,N/A,N/A,STRUCT*,,,3,ffmpeg,libavutil/buffer.c,av_buffer_pool_uninit,D,1,N/A,OD,,,ptr,N/A
-4,redis,src/object.c,createIntsetObject,A,0,OBJECT,N/A,N/A,STRUCT*,,,3,ffmpeg,libavutil/buffer.c,pool_release_buffer,D,2,N/A,"RD, not used",,,"ptr, uint*",N/A
-4,redis,src/object.c,createHashObject,A,0,OBJECT,N/A,N/A,STRUCT*,,,2,ffmpeg,libavutil/frame.c,free_side_data,D,1,N/A,OD,,,ptr,N/A
-4,redis,src/object.c,createZsetObject,A,0,OBJECT,N/A,N/A,STRUCT*,,,2,ffmpeg,libavutil/frame.c,av_frame_unref,D,1,N/A,RD,,,ptr,N/A
-4,redis,src/object.c,createZsetListpackObject,A,0,OBJECT,N/A,N/A,STRUCT*,,,2,ffmpeg,libavutil/frame.c,wipe_side_data,D,1,N/A,RD,,,ptr,N/A
-4,redis,src/object.c,createStreamObject,A,0,OBJECT,N/A,N/A,STRUCT*,,,2,ffmpeg,libavutil/frame.c,av_frame_free,D,1,N/A,OD,,,ptr,N/A
-4,redis,src/object.c,createModuleObject,A,2,OBJECT,"IV, IV","PTR, PTR",STRUCT*,,,1,ffmpeg,libavutil/hwcontext_opencl.c,opencl_pool_free,D,1,N/A,"RD, OD",,,"void*, uint*",N/A
-3,redis,src/object.c,getMemoryOverheadData,A,0,OBJECT,N/A,N/A,STRUCT*,,,1,ffmpeg,libavutil/aes_ctr.c,av_aes_ctr_free,D,1,N/A,OD,,,ptr,N/A
-3,redis,src/call_reply.c,callReplyCreate,A,2,OBJECT,"IV, IV","STRUCT, PTR",STRUCT*,,,1,ffmpeg,libavutil/hwcontext_vdpau.c,vdpau_buffer_free,D,1,N/A,"RD, OD",,,"void*, uint*",N/A
-3,redis,src/cluster.c,createClusterLink,A,1,OBJECT,IV,PTR,STRUCT*,,,2,ffmpeg,libavutil/hwcontext_vdpau.c,vdpau_device_free,D,1,N/A,RD,,,ptr,N/A
-3,redis,src/cluster.c,createClusterNode,A,2,OBJECT,IV,"CHAR*, INT",STRUCT*,,,1,ffmpeg,libavutil/vulkan.c,destroy_imageview,D,2,N/A,"RD, OD",,,"void*, uint*",N/A
-5,redis,src/cluster.c,clusterAddNode,A,1,N/A,IV,PTR,STRUCT*,,,1,ffmpeg,libavutil/vulkan.c,free_pipeline,D,2,N/A,"RD, OD",,,"ptr, ptr",N/A
-5,redis,src/cluster.c,clusterBlacklistAddNode,A,1,N/A,IV,PTR,STRUCT*,,,2,ffmpeg,libavutil/hwcontext.c,hwframe_ctx_free,D,2,N/A,"unused, OD",,,"void*, uint*",N/A
-3,redis,src/cluster.c,slotToKeyInit,A,1,N/A,RD,PTR,STRUCT*,,,2,ffmpeg,libavutil/hwcontext.c,hwdevice_ctx_free,D,2,N/A,"unused, OD",,,"void*, uint*",N/A
-3,redis,src/sentinel.c,dupSentinelAddr,A,1,OBJECT,IV,PTR,STRUCT*,,,1,ffmpeg,libavutil/hwcontext.c,ff_hwframe_unmap,D,2,N/A,"RD, OD",,,"void*, uint*",N/A
-3,redis,src/sentinel.c,createSentinelAddr,A,2,OBJECT,IV,"CHAR*, INT",STRUCT*,,,1,ffmpeg,libavutil/vulkan.c,free_exec_ctx,D,2,N/A,"RD, OD",,,"ptr, ptr",N/A
-3,redis,src/sentinel.c,createReplicationBacklog,A,0,N/A,N/A,N/A,STRUCT*,,,1,ffmpeg,libavutil/hwcontext_vulkan.c,vulkan_frame_free,D,2,N/A,"RD, OD",,,"void*, uint*",N/A
-3,redis,src/networking.c,dupClientReplyValue,A,1,OBJECT,IV,PTR,STRUCT*,,,2,ffmpeg,libavutil/hwcontext_vulkan.c,vulkan_free_internal,D,1,N/A,RD,,,ptr,N/A
-3,redis,src/networking.c,createClient,A,1,OBJECT,RD,PTR,STRUCT*,,,1,ffmpeg,libavutil/hwcontext_vulkan.c,vulkan_unmap_frame,D,2,N/A,"RD, RD",,,"ptr, ptr",N/A
-3,redis,src/networking.c,createSparklineSequence,A,0,OBJECT,N/A,N/A,STRUCT*,,,1,ffmpeg,libavutil/hwcontext_vulkan.c,free_buf,D,2,N/A,"RD, OD",,,"void*, uint*",N/A
-3,redis,src/redis-cli.c,clusterManagerNewNode,A,2,OBJECT,"RD, IV","CHAR*, INT",STRUCT*,,,2,ffmpeg,libavutil/hash.c,av_hash_freep,D,1,N/A,OD,,,ptr,N/A
-3,redis,src/t_hash.c,hashTypeInitIterator,A,1,OBJECT,IV,PTR,STRUCT*,,,2,ffmpeg,libavutil/hwcontext_dxva2.c,dxva2_device_free,D,1,N/A,RD,,,ptr,N/A
-3,redis,src/t_stream.c,streamNew,A,0,OBJECT,N/A,N/A,STRUCT*,,,2,ffmpeg,libavutil/slicethread.c,avpriv_slicethread_free,D,1,N/A,OD,,,ptr,N/A
-4,redis,src/t_stream.c,createObjectFromStreamID,A,1,OBJECT,IV,PTR,STRUCT*,,,1,ffmpeg,libavutil/hwcontext_drm.c,drm_unmap_frame,D,2,N/A,"RD, RD",,,"ptr, ptr",N/A
-5,redis,src/t_stream.c,streamCreateNACK,A,1,OBJECT,IV,PTR,STRUCT*,,,2,ffmpeg,libavutil/eval.c,av_expr_free,D,2,N/A,OD,,,ptr,N/A
-5,redis,src/t_stream.c,streamCreateCG,A,4,OBJECT,"IV, IV, IV, IV","PTR, CHAR*, INT, PTR",STRUCT*,,,2,ffmpeg,libavutil/threadmessage.c,av_thread_message_queue_free,D,1,N/A,OD,,,ptr,N/A
-5,redis,src/t_stream.c,streamCreateConsumer,A,5,OBJECT,"IV, IV, IV, IV, IV","PTR, STRUCT, PTR, INT, INT",STRUCT*,,,2,ffmpeg,libavutil/vulkan_shaderc.c,shdc_uninit,D,1,N/A,OD,,,ptr,N/A
-3,redis,deps/hihiredis.c,redisContextInit,A,0,OBJECT,N/A,N/A,STRUCT*,,,1,ffmpeg,libavutil/encryption_info.c,av_encryption_info_free,D,1,N/A,OD,,,ptr,N/A
-3,redis,deps/hihiredis.c,createReplyObject,A,1,OBJECT,IV,INT,STRUCT*,,,1,ffmpeg,libavutil/encryption_info.c,av_encryption_init_info_free,D,1,N/A,OD,,,ptr,N/A
-2,redis,deps/hialloc.c,hi_malloc,A,1,OBJECT,AS,INT,VOID*,,,1,ffmpeg,libavutil/pca.c,ff_pca_free,D,1,N/A,OD,,,ptr,N/A
-2,redis,deps/hialloc.c,hi_calloc,A,2,OBJECT,"AS, AS","INT, INT",VOID*,,,1,ffmpeg,libavutil/hwcontext_d3d11va.c,free_texture,D,2,N/A,"RD, OD",,,"void*, uint*",N/A
-2,redis,deps/hialloc.c,hi_realloc,RA,2,OBJECT,"IV, AS","PTR, INT",VOID*,,,1,ffmpeg,libavutil/hmac.c,av_hmac_free,D,1,N/A,OD,,,ptr,N/A
-2,redis,deps/hialloc.c,hi_strdup,A,1,OBJECT,IV,PTR,VOID*,,,1,ffmpeg,libavutil/tree.c,av_tree_destroy,D,1,N/A,OD,,,ptr,N/A
-0,httpd,memory/unix/apr_pools.c,allocator_alloc,MA,2,OBJECT,"RD, AS","PTR, INT",VOID*,,,2,ffmpeg,libavcodec/nvdec.c,nvdec_decoder_free,D,2,N/A,"unused, OD",,,"void*, uint*",N/A
-1,httpd,memory/unix/apr_pools.c,apr_allocator_alloc,A,2,OBJECT,"RD, AS","PTR, INT",VOID*,,,2,ffmpeg,libavcodec/nvdec.c,nvdec_fdd_priv_free,D,1,N/A,OD,,,void*,N/A
-0,httpd,memory/unix/apr_pools.c,apr_palloc,MA,2,OBJECT,"RD, AS","PTR, INT",VOID*,,,2,ffmpeg,libavcodec/avpacket.c,av_packet_free,D,1,N/A,OD,,,ptr,N/A
-1,httpd,memory/unix/apr_pools.c,apr_pcalloc,MA,2,OBJECT,"RD, AS","PTR, INT",VOID*,,,2,ffmpeg,libavcodec/avpacket.c,av_packet_free_side_data,D,1,N/A,RD,,,ptr,N/A
-0,httpd,memory/unix/apr_pools.c,pool_alloc,A,2,OBJECT,"RD, AS","PTR, INT",VOID*,,,2,ffmpeg,libavcodec/avpacket.c,avpriv_packet_list_free,D,1,N/A,RD,,,ptr,N/A
-1,httpd,memory/unix/apr_pools.c,apr_palloc_debug,A,3,OBJECT,"RD, AS, unused","PTR, INT, INT",VOID*,,,1,ffmpeg,libavcodec/dcaenc.c,subband_bufer_free,D,1,N/A,RD,,,ptr,N/A
-1,httpd,memory/unix/apr_pools.c,apr_pcalloc_debug,A,3,OBJECT,"RD, AS, unused","PTR, INT, INT",VOID*,,,2,ffmpeg,libavcodec/dcaadpcm.c,ff_dcaadpcm_free,D,1,N/A,OD,,,ptr,N/A
-0,httpd,shmem/unix/shm.c,apr_shm_create,MA,4,SUCCESS FLAG,"IV, IV","DPTR, INT, CHAR*, PTR",INT,,,2,ffmpeg,libavcodec/options.c,avcodec_free_context,D,1,N/A,OD,,,ptr,N/A
-0,httpd,shmem/unix/shm.c,apr_shm_create_ex,A,5,SUCCESS FLAG,"RD, IV, IV, RD, unused","DPTR, INT, CHAR*, PTR, INT",INT,,,1,ffmpeg,libavcodec/videotoolbox.c,videotoolbox_buffer_release,D,2,N/A,"unused, OD",,,"void*, uint*",N/A
-2,httpd,tables/apr_hash.c,alloc_array,A,2,OBJECT,"RD, AS","PTR, INT",STRUCT*,,,3,ffmpeg,libavcodec/mpegpicture.c,free_picture_tables,D,1,N/A,RD,,,ptr,N/A
-2,httpd,tables/apr_hash.c,apr_hash_make,A,1,OBJECT,RD ,PTR,STRUCT*,,,1,ffmpeg,libavcodec/dts2pts_bsf.c,free_node,D,2,flag,"unused, OD",,,"void*, void*",int
-3,httpd,tables/apr_hash.c,apr_hash_make_custom,A,2,OBJECT,"RD, IV","PTR, FUNCP",STRUCT*,,,1,ffmpeg,libavcodec/v4l2_m2m.c,v4l2_m2m_destroy_context,D,2,N/A,"unused, OD",,,"void*, uint*",N/A
-2,httpd,tables/apr_hash.c,apr_hash_copy,A,2,OBJECT,"RD, IV","PTR, PTR",STRUCT*,,,2,ffmpeg,libavcodec/mediacodec_wrapper.c,mediaformat_jni_delete,D,1,flag,OD,,,ptr,int
-2,httpd,tables/apr_hash.c,apr_hash_merge,A,5,OBJECT,"RD, IV","PTR, PTR, PTR, FUNCP, PTR",STRUCT*,,,2,ffmpeg,libavcodec/mediacodec_wrapper.c,mediacodec_jni_delete,D,1,flag,OD,,,ptr,int
-3,httpd,tables/apr_hash.c,apr_hash_overlay,A,3,OBJECT,"RD, IV, IV","PTR, PTR, PTR",STRUCT*,,,1,ffmpeg,libavcodec/mediacodec_wrapper.c,mediaformat_ndk_delete,D,1,flag,OD,,,ptr,int
-0,httpd,tables/apr_skiplist.c,apr_skiplist_alloc,MA,2,OBJECT,"RD, AS","PTR, INT",VOID*,,,1,ffmpeg,libavcodec/mediacodec_wrapper.c,mediacodec_ndk_delete,D,1,flag,OD,,,ptr,int
-2,httpd,tables/apr_skiplist.c,skiplisti_init,A,2,SUCCESS FLAG,"RD, RD","DPTR, PTR",INT,,,2,ffmpeg,libavcodec/bsf.c,av_bsf_list_free,D,1,N/A,OD,,,ptr,N/A
-3,httpd,tables/apr_skiplist.c,apr_skiplist_init,A,2,SUCCESS FLAG,"RD, RD","DPTR, PTR",INT,,,2,ffmpeg,libavcodec/options.c,avcodec_free_context,D,1,N/A,OD,,,ptr,N/A
-0,httpd,tables/apr_skiplist.c,skiplist_new_node,MA,1,OBJECT,RD,PTR,STRUCT*,,,2,ffmpeg,libavcodec/get_buffer.c,frame_pool_free,D,2,N/A,"unused, OD",,,"void*, uint*",N/A
-1,httpd,tables/apr_tables.c,apr_array_make,A,3,OBJECT,"RD, IV, IV","PTR, INT, INT",STRUCT*,,,2,ffmpeg,libavcodec/opusdec_celt.c,ff_celt_free,D,1,N/A,OD,,,ptr,N/A
-1,httpd,tables/apr_tables.c,make_array_core,A,5,N/A,"RD, RD, AS, AS, RD","PTR, PTR, INT, INT, INT",N/A,,,1,ffmpeg,libavcodec/libjxl.c,libjxl_av_free,D,2,N/A,"unused, OD",,,"void*, void*",N/A
-1,httpd,tables/apr_tables.c,apr_array_copy,A,2,OBJECT,"RD, IV","PTR, PTR",STRUCT*,,,2,ffmpeg,libavcodec/opus_pvq.c,ff_celt_pvq_uninit,D,1,N/A,OD,,,ptr,N/A
-1,httpd,tables/apr_tables.c,apr_array_copy_hdr,A,2,OBJECT,"RD, IV","PTR, PTR",STRUCT*,,,1,ffmpeg,libavcodec/vaapi_encode.c,vaapi_encode_free,D,2,flag,"RD, OD",,,"ptr, ptr",int
-2,httpd,tables/apr_tables.c,apr_array_append,A,3,OBJECT,"RD, IV, IV","PTR, PTR, PTR",STRUCT*,,,1,ffmpeg,libavcodec/psymodel.c,ff_psy_preprocess_end,D,1,N/A,OD,,,ptr,N/A
-1,httpd,tables/apr_tables.c,apr_table_make,A,2,OBJECT,"RD, IV","PTR, INT",STRUCT*,,,2,ffmpeg,libavcodec/decode.c,decode_data_free,D,2,N/A,"unused, OD",,,"void*, uint*",N/A
-1,httpd,tables/apr_tables.c,apr_table_copy,A,2,OBJECT,"RD, IV","PTR, PTR",STRUCT*,,,1,ffmpeg,libavcodec/omx.c,omx_deinit,D,1,N/A,OD,,,ptr,N/A
-2,httpd,tables/apr_tables.c,apr_table_clone,A,2,OBJECT,"RD, IV","PTR, PTR",STRUCT*,,,1,ffmpeg,libavcodec/fft_template.c,ff_fft_end,D,1,N/A,RD,,,ptr,N/A
-1,httpd,tables/apr_tables.c,apr_table_overlay,A,3,OBJECT,"RD, IV, IV","PTR, PTR, PTR",STRUCT*,,,1,ffmpeg,libavcodec/avfft.c,av_fft_end,D,1,N/A,OD,,,ptr,N/A
-1,httpd,tables/apr_tables.c,apr_array_pstrcat,A,3,OBJECT,"RD, IV, IV","PTR, PTR, CHAR*",STRUCT*,,,1,ffmpeg,libavcodec/avfft.c,av_mdct_end,D,1,N/A,OD,,,ptr,N/A
-1,httpd,dso/unix/dso.c,apr_os_dso_handle_put,A,3,SUCCESS FLAG,"RD, IV, IV","DPTR, STRUCT, PTR",INT,,,1,ffmpeg,libavcodec/avfft.c,av_rdft_end,D,1,N/A,OD,,,ptr,N/A
-1,httpd,locks/unix/global_mutex.c,apr_global_mutex_create,A,4,SUCCESS FLAG,"RD, IV, IV, RD","DPTR, CHAR*, STRUCT, PTR",INT,,,1,ffmpeg,libavcodec/avfft.c,av_dct_end,D,1,N/A,OD,,,ptr,N/A
-1,httpd,locks/netware/proc_mutex.c,apr_proc_mutex_create,A,4,SUCCESS FLAG,"RD, IV, IV, RD","DPTR, CHAR*, STRUCT, PTR",INT,,,3,ffmpeg,libavcodec/libdav1d.c,libdav1d_user_data_free,D,1,N/A,"RD, OD",,,"uint*, void*",N/A
-1,httpd,locks/netware/thread_cond.c,apr_thread_cond_create,A,2,SUCCESS FLAG,"RD, RD","DPTR, PTR",INT,,,1,ffmpeg,libavcodec/zlib_wrapper.c,free_wrapper,D,2,N/A,"unused, OD",,,"void*, void*",N/A
-1,httpd,locks/netware/thread_mutex.c,apr_thread_mutex_create,A,3,SUCCESS FLAG,"RD, RD, RD","DPTR, INT, PTR",INT,,,2,ffmpeg,libavcodec/flac_parser.c,flac_fifo_free,D,1,N/A,OD,,,ptr,N/A
-1,httpd,locks/unix/thread_rwlock.c,apr_thread_rwlock_create,A,2,SUCCESS FLAG,"RD, RD","DPTR, PTR",INT,,,2,ffmpeg,libavcodec/bink.c,free_bundles,D,1,N/A,OD,,,ptr,N/A
-2,httpd,strings/apr_strings.c,apr_pstrdup,A,2,OBJECT,"RD, IV","PTR, CHAR*",VOID*,,,2,ffmpeg,libavcodec/codec_par.c,avcodec_parameters_free,D,1,N/A,OD,,,ptr,N/A
-1,httpd,strings/apr_strings.c,apr_pstrndup,A,3,OBJECT,"RD, IV, AS","PTR, CHAR*, INT",VOID*,,,1,ffmpeg,libavcodec/mediacodec_surface.c,ff_mediacodec_surface_unref,D,2,flag,"OD, RD",,,"ptr, void*",int
-1,httpd,strings/apr_strings.c,apr_pstrmemdup,A,3,OBJECT,"RD, IV, AS","PTR, PTR, INT",VOID*,,,2,ffmpeg,libavcodec/mediacodec.c,av_mediacodec_default_free,D,1,N/A,OD,,,ptr,N/A
-1,httpd,strings/apr_strings.c,apr_pmemdup,A,3,OBJECT,"RD, IV, AS","PTR, PTR, INT",VOID*,,,2,ffmpeg,libavcodec/qsv.c,mids_buf_free,D,2,N/A,"RD, OD",,,"void*, uint*",N/A
-1,httpd,strings/apr_strings.c,apr_pstrcat,A,1+,OBJECT,"RD, ",PTR,VOID*,,,2,ffmpeg,libavcodec/qsv.c,qsv_frame_free,D,2,flag,"unused, OD",,,"ptr, ptr",int
-1,httpd,strings/apr_strings.c,apr_pstrcatv,A,4,OBJECT,"RD, IV, AS, AS","PTR, PTR, INT, PTR",VOID*,,,1,ffmpeg,libavcodec/cbs_sei.c,cbs_free_user_data_registered,D,2,N/A,"unused, OD",,,"ptr, ptr",N/A
-1,httpd,strings/apr_strings.c,apr_itoa,A,2,OBJECT,"RD, IV","PTR, INT",VOID*,,,1,ffmpeg,libavcodec/cbs_sei.c,cbs_free_user_data_unregistered,D,2,N/A,"unused, OD",,,"ptr, ptr",N/A
-1,httpd,strings/apr_strings.c,apr_ltoa,A,2,OBJECT,"RD, IV","PTR, INT",VOID*,,,1,ffmpeg,libavcodec/cbs_sei.c,ff_cbs_sei_free_message_list,D,1,N/A,RD,,,ptr,N/A
-1,httpd,strings/apr_strings.c,apr_off_t_toa,A,2,OBJECT,"RD, IV","PTR, INT",VOID*,,,1,ffmpeg,libavcodec/rkmppdec.c,rkmpp_release_decoder,D,2,N/A,"unused, OD",,,"void*, uint*",N/A
-1,httpd,misc/unix/otherchild.c,apr_proc_other_child_register,A,5,N/A,"IV, IV, IV, IV, RD","PTR, FUNCP, PTR, PTR, PTR",N/A,,,1,ffmpeg,libavcodec/rkmppdec.c,rkmpp_release_frame,D,2,N/A,"OD, RD",,,"void*, uint*",N/A
-1,httpd,mmap/unix/mmap.c,apr_mmap_create,A,6,SUCCESS FLAG,"RD, IV, IV, IV, IV, RD","DPTR, PTR, INT, INT, INT, PTR",INT,,,1,ffmpeg,libavcodec/jpeglsenc.c ,encode_jpegls_close,D,1,flag,OD,,,ptr,int
-2,httpd,mmap/unix/mmap.c,apr_mmap_dup,A,3,SUCCESS FLAG,"RD, IV, RD","DPTR, PTR, PTR",INT,,,0,ffmpeg,libavdevice/xcbgrab.c,free_shm_buffer,D,2,N/A,"unused, OD",,,"void*, uint*",N/A
-1,httpd,network_io/unix/sockaddr.c,apr_sockaddr_ip_get,A,2,SUCCESS FLAG,"RD, IV ","DPTR, PTR",INT,,,1,ffmpeg,libswscale/utils.c,sws_freeContext,D,1,N/A,OD,,,ptr,N/A
-1,httpd, network_io/unix/sockaddr.c,apr_ipsubnet_create,A,4,SUCCESS FLAG,"RD, IV, RD","DPTR, CHAR*, CHAR*, PTR",INT,,,1,ffmpeg,libswscale/utils.c,sws_freeVec,D,1,N/A,OD,,,ptr,N/A
-1,httpd,network_io/unix/sockets.c,alloc_socket,A,2,N/A,"RD, RD","DPTR, PTR",N/A,,,1,ffmpeg,libswscale/utils.c,sws_freeFilter,D,1,N/A,OD,,,ptr,N/A
-2,httpd,network_io/unix/sockets.c,apr_socket_create,A,5,SUCCESS FLAG,"RD, IV, RD, RD","DPTR, INT, INT, INT, PTR",INT,,,2,ffmpeg,libavfilter/framepool.c,ff_frame_pool_uninit,D,1,N/A,OD,,,ptr,N/A
-1,httpd,network_io/unix/sockets.c,apr_socket_data_set,A,4,SUCCESS FLAG,"RD, IV, IV, IV","PTR, PTR, CHAR*, FUNCP",INT,,,1,ffmpeg,libavfilter/vf_pullup.c,free_field_queue,D,1,N/A,RD,,,ptr,N/A
-1,httpd,random/unix/sha2_glue.c,apr_crypto_sha256_new,A,1,OBJECT,RD,PTR,STRUCT*,,,2,ffmpeg,libavfilter/graphparser.c,avfilter_inout_free,D,1,N/A,OD,,,ptr,N/A
-1,httpd,random/unix/apr_random.c,apr_random_standard_new,A,1,OBJECT,RD,PTR,STRUCT*,,,2,ffmpeg,libavfilter/framequeue.c,ff_framequeue_free,D,1,N/A,OD,,,ptr,N/A
-1,httpd,threadproc/unix/proc.c,apr_procattr_create,A,2,SUCCESS FLAG,"RD, RD","DPTR, PTR",INT,,,2,ffmpeg,libavfilter/avfilter.c,avfilter_link_free,D,1,N/A,OD,,,ptr,N/A
-1,httpd,threadproc/unix/proc.c,apr_procattr_perms_set_register,A,4,SUCCESS FLAG,"RD, IV, IV, IV","PTR, FUNCP, PTR, STRUCT",INT,,,3,ffmpeg,libavfilter/avfilter.c,free_link,D,1,N/A,OD,,,ptr,N/A
-1,httpd,threadproc/unix/thread.,apr_threadattr_create,A,2,SUCCESS FLAG,"RD, RD","DPTR, PTR",INT,,,1,ffmpeg,libavfilter/avfilter.c,avfilter_free,D,1,N/A,OD,,,ptr,N/A
-1,httpd,threadproc/unix/thread.c,apr_thread_create,A,5,SUCCESS FLAG,"RD, IV, IV, IV, RD","DPTR, PTR, FUNCP, PTR, PTR",INT,,,2,ffmpeg,libavfilter/vf_morpho.c,free_lut,D,1,N/A,OD,,,ptr,N/A
-1,httpd,threadproc/unix/thread.c,apr_thread_once_init,A,2,SUCCESS FLAG,"RD, RD","DPTR, PTR",INT,,,2,ffmpeg,libavfilter/dnn/queue.c,ff_queue_destroy,D,1,N/A,OD,,,ptr,N/A
-1,httpd,threadproc/unix/threadpriv.c,apr_threadkey_private_create,A,3,SUCCESS FLAG,"RD, IV, RD","DPTR, FUNCP, PTR",INT,,,2,ffmpeg,libavfilter/dnn/dnn_backend_tf.c,free_buffer,D,2,N/A,"OD, unused",,,"void*, size_t",N/A
-1,httpd,buckets/apr_brigade.c,apr_brigade_create,A,2,OBJECT,"RD, IV","PTR, PTR",STRUCT*,,,2,ffmpeg,libavfilter/dnn/dnn_backend_tf.c,destroy_request_item,D,1,N/A,OD,,,ptr,N/A
-0,httpd,buckets/apr_buckets_alloc.c,apr_bucket_alloc_create,MA,1,OBJECT,RD,PTR,STRUCT*,,,2,ffmpeg,libavfilter/qsvvpp.c,frame_free,D,2,flag,"unused, OD",,,"ptr, ptr",int
-1,httpd,buckets/apr_buckets_alloc.c,apr_bucket_alloc_create_ex,A,1,OBJECT,RD,PTR,STRUCT*,,,2,ffmpeg,libavfilter/qsvvpp.c,ff_qsvvpp_free,D,1,flag,OD,,,ptr,int
-0,httpd,buckets/apr_buckets_alloc.c,apr_bucket_alloc,MA,2,OBJECT,"AS, RD","INT, PTR",VOID*,,,2,ffmpeg,libavfilter/avfiltergraph.c,avfilter_graph_free,D,1,N/A,OD,,,ptr,N/A
-1,httpd,buckets/apr_buckets_eos.c,apr_bucket_eos_create,A,1,OBJECT,RD,PTR,STRUCT*,,,2,ffmpeg,libavformat/rtmppkt.c,ff_rtmp_packet_destroy,D,1,N/A,OD,,,ptr,N/A
-1,httpd,buckets/apr_buckets_file.c,apr_bucket_file_make,A,5,parent obj,"RD, IV, IV, IV, IV","PTR, PTR, INT, INT, PTR",STRUCT*,,,2,ffmpeg,libavformat/aviobuf.c,avio_context_free,D,1,N/A,OD,,,ptr,N/A
-1,httpd,buckets/apr_buckets_file.c,apr_bucket_file_create,A,5,OBJECT,"IV, IV, IV, IV, RD","PTR, INT, INT, PTR, PTR",STRUCT*,,,2,ffmpeg,libavformat/avio.c,avio_free_directory_entry,D,1,N/A,OD,,,ptr,N/A
-1,httpd,buckets/apr_buckets_flush.c,apr_bucket_flush_create,A,1,OBJECT,RD,PTR,STRUCT*,,,2,ffmpeg,libavformat/avio.c,avio_close_dir,D,1,flag,OD,,,ptr,int
-1,httpd,buckets/apr_buckets_heap.c,apr_bucket_heap_make,A,4,parent obj,"IV, IV, IV, RD","PTR, CHAR*, INT, FUNCP",STRUCT*,,,2,ffmpeg,libavformat/imf_cpl.c,ff_imf_cpl_free,D,1,N/A,OD,,,ptr,N/A
-1,httpd,buckets/apr_buckets_heap.c,apr_bucket_heap_create,A,4,OBJECT,"IV, IV, IV, RD","CHAR*, INT, FUNCP, PTR",STRUCT*,,,1,ffmpeg,libavformat/nut.c,enu_free,D,2,flag,"unused, OD",,,"void*, void*",int
-1,httpd,buckets/apr_buckets_mmap.c,apr_bucket_mmap_make,A,4,parent obj,"IV, IV, IV, RD","PTR, PTR, INT, INT",STRUCT*,,,3,ffmpeg,libavformat/segment.c,close_null_ctxp,D,1,N/A,OD,,,ptr,N/A
-1,httpd,buckets/apr_buckets_mmap.c,apr_bucket_mmap_create,A,4,OBJECT,"IV, IV, IV, RD","PTR, INT, INT, PTR",STRUCT*,,,1,ffmpeg,libpostproc/postprocess.c,pp_free_mode,D,1,N/A,OD,,,ptr,N/A
-1,httpd,buckets/apr_buckets_pipe.c,apr_bucket_pipe_create,A,2,OBJECT,"IV, RD","PTR, PTR",STRUCT*,,,1,ffmpeg,libpostproc/postprocess.c,pp_free_context,D,1,N/A,OD,,,ptr,N/A
-1,httpd,buckets/apr_buckets_pool.c,apr_bucket_pool_make,A,4,parent obj,"IV, IV, IV, RD","PTR, CHAR*, INT, PTR",STRUCT*,,,2,ffmpeg,libswresample/audioconvert.c,swri_audio_convert_free,D,1,N/A,OD,,,ptr,N/A
-1,httpd,buckets/apr_buckets_pool.c,apr_bucket_pool_create,A,4,OBJECT,"IV, IV, IV, RD","CHAR*, INT, PTR, PTR",STRUCT*,,,1,ffmpeg,libswresample/swresample.c,free_temp,D,1,N/A,RD,,,ptr,N/A
-1,httpd,buckets/apr_buckets_simple.c,apr_bucket_simple_copy,A,2,SUCCESS FLAG,"RD, IV","PTR, DPTR",INT,,,2,ffmpeg,libswresample/swresample.c,swr_free,D,1,N/A,OD,,,ptr,N/A
-2,httpd,buckets/apr_buckets_simple.c,apr_bucket_simple_split,A,2,SUCCESS FLAG,"IV, IV","PTR, INT",INT,,,2,ffmpeg,fftools/objpool.c,objpool_free,D,1,N/A,OD,,,ptr,N/A
-1,httpd,buckets/apr_buckets_simple.c,apr_bucket_immortal_create,A,3,OBJECT,"IV, IV, RD","CHAR*, INT, PTR",STRUCT*,,,3,ffmpeg,fftools/objpool.c,free_packet,D,1,N/A,OD,,,ptr,N/A
-1,httpd,buckets/apr_buckets_simple.c,apr_bucket_transient_create,A,3,OBJECT,"IV, IV, RD","CHAR*, INT, PTR",STRUCT*,,,3,ffmpeg,fftools/objpool.c,free_frame,D,1,N/A,OD,,,ptr,N/A
-1,httpd,buckets/apr_buckets_socket.c,apr_bucket_socket_create,A,2,OBJECT,"IV, RD","PTR, PTR",STRUCT*,,,2,ffmpeg,fftools/sync_queue.c,sq_free,D,1,N/A,OD,,,ptr,N/A
-1,httpd,crypto/apr_crypto.c,apr_crypto_clear,A,3,SUCCESS FLAG,"RD, IV, RD","PTR, PTR, INT",INT,,,2,ffmpeg,libavutil/opt.c,av_opt_free,D,1,N/A,OD,,,ptr,N/A
-1,httpd,crypto/apr_crypto_commoncrypto.c,crypto_make,A,4,SUCCESS FLAG,"RD, IV, RD","DPTR, PTR, CHAR*, PTR",INT,,,2,ffmpeg,libavutil/opt.c,av_opt_freep_ranges,D,1,N/A,OD,,,ptr,N/A
-1,httpd,crypto/apr_crypto_openssl.c,EVP_CIPHER_CTX_new,A,0,OBJECT,N/A,N/A,STRUCT*,,,2,ffmpeg,libswresample/rematrix.c,swri_rematrix_free,D,1,N/A,RD,,,ptr,N/A
+3,cpyhton,Objects/memoryobject.c,memory_iter,A,1,OBJECT,RD,STRUCT*,STRUCT*,,,3,redis,src/t_zset.c,zslFreeNode,D,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
+5,cpython,Objects/memoryobject.c,unpacker_new,A,0,OBJECT,N/A,N/A,STRUCT*,,,2,redis,src/t_zset.c,zslFree,D,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
+0,cpython,Objects/dictobject.c,new_dict,MA,4,OBJECT,"IV, IV, IV, IV, RD","STRUCT*, STRUCT*, INT, INT",STRUCT*,,,3,redis,src/t_zset.c,zslDeleteRangeByLex,D,3,removed count,"RD, RD, RD","STRUCT*, STRUCT*, STRUCT*",ULONG,"STRUCT*, STRUCT*, STRUCT*",ULONG
+1,cpython,Objects/dictobject.c,new_dict_with_shared_keys,A,1,OBJECT,IV,STRUCT*,STRUCT*,,,3,redis,src/t_zset.c,zslDeleteRangeByScore,D,3,removed count,"RD, RD, RD","CHAR*, STRUCT*, ULONG*",CHAR*,"CHAR*, STRUCT*, ULONG*",CHAR*
+1,cpython,Objects/dictobject.c,PyDict_New,A,0,OBJECT,N/A,N/A,STRUCT*,,,3,redis,src/t_zset.c,zslDeleteRangeByRank,D,4,removed count,"RD, RD, RD, RD","STRUCT*, INT, INT, STRUCT*",CHAR*,"STRUCT*, INT, INT, STRUCT*",CHAR*
+2,cpython,Objects/dictobject.c,_PyDict_NewPresized,A,1,OBJECT,IV,INT,STRUCT*,,,3,redis,src/object.c,freeStringObject,D,1,N/A,RD,STRUCT*,N/A,STRUCT*,N/A
+3,cpython,Objects/dictobject.c,dict_copy,A,1,OBJECT,"IV, unused",STRUCT*,STRUCT*,,,3,redis,src/object.c,freeListObject,D,1,N/A,RD,STRUCT*,N/A,STRUCT*,N/A
+2,cpython,Objects/dictobject.c,PyDict_Copy,A,1,OBJECT,IV,STRUCT*,STRUCT*,,,3,redis,src/object.c,freeSetObject,D,1,N/A,RD,STRUCT*,N/A,STRUCT*,N/A
+0,cpython,Objects/dictobject.c,new_keys_object,MA,1,OBJECT,AS,INT,STRUCT*,,,3,redis,src/object.c,freeZsetObject,D,1,N/A,RD,STRUCT*,N/A,STRUCT*,N/A
+5,cpython,Objects/dictobject.c,new_values ,A,1,OBJECT,AS,INT,STRUCT*,,,3,redis,src/object.c,freeHashObject,D,1,N/A,RD,STRUCT*,N/A,STRUCT*,N/A
+2,cpython,Objects/dictobject.c,_PyDictView_New,A,2,OBJECT,"IV, IV","STRUCT*, STRUCT*",STRUCT*,,,2,redis,src/object.c,freeModuleObject,D,1,N/A,RD,STRUCT*,N/A,STRUCT*,N/A
+3,cpython,Objects/dictobject.c,dictkeys_new,A,2,OBJECT,"IV, IV","STRUCT*, STRUCT*",STRUCT*,,,3,redis,src/object.c,freeStreamObject,D,1,N/A,RD,STRUCT*,N/A,STRUCT*,N/A
+3,cpython,Objects/dictobject.c,dictitems_new,A,2,OBJECT,"IV, IV","STRUCT*, STRUCT*",STRUCT*,,,4,redis,src/object.c,decrRefCount,D,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
+3,cpython,Objects/dictobject.c,dictvalues_new,A,2,OBJECT,"IV, IV","STRUCT*, STRUCT*",STRUCT*,,,0,redis,src/object.c,dismissMemory,MD,2,N/A,"OD, RD","VOID*, INT",N/A,"VOID*, INT",N/A
+2,cpython,Objects/dictobject.c,dictiter_new,A,2,OBJECT,"IV, IV","STRUCT*, STRUCT*",STRUCT*,,,1,redis,src/object.c,dismissSds,D,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
+3,cpython,Objects/dictobject.c,dictkeys_reversed,A,2,OBJECT,"IV, unused","STRUCT*, STRUCT*",STRUCT*,,,2,redis,src/object.c,dismissStringObject,D,1,N/A,RD,STRUCT*,N/A,STRUCT*,N/A
+3,cpython,Objects/dictobject.c,dictvalues_reversed,A,2,OBJECT,"IV, unused","STRUCT*, STRUCT*",STRUCT*,,,1,redis,src/object.c,dismissListObject,D,2,N/A,"RD, RD","STRUCT*, INT",N/A,"STRUCT*, INT",N/A
+3,cpython,Objects/dictobject.c,dictitems_reversed,A,2,OBJECT,"IV, unused","STRUCT*, STRUCT*",STRUCT*,,,2,redis,src/object.c,dismissSetObject,D,2,N/A,"RD, RD","STRUCT*, INT",N/A,"STRUCT*, INT",N/A
+3,cpython,Objects/dictobject.c,dict_iter,A,1,OBJECT,IV,STRUCT*,STRUCT*,,,2,redis,src/object.c,dismissZsetObject,D,2,N/A,"RD, RD","STRUCT*, INT",N/A,"STRUCT*, INT",N/A
+3,cpython,Objects/dictobject.c,dictkeys_iter,A,1,OBJECT,IV,STRUCT*,STRUCT*,,,2,redis,src/object.c,dismissHashObject,D,2,N/A,"RD, RD","STRUCT*, INT",N/A,"STRUCT*, INT",N/A
+3,cpython,Objects/dictobject.c,dictvalues_iter,A,1,OBJECT,IV,STRUCT*,STRUCT*,,,1,redis,src/object.c,dismissStreamObject,D,2,N/A,"RD, RD","STRUCT*, INT",N/A,"STRUCT*, INT",N/A
+3,cpython,Objects/dictobject.c,dictitems_iter,A,1,OBJECT,IV,STRUCT*,STRUCT*,,,3,redis,src/object.c,dismissObject,D,2,N/A,"RD, RD","STRUCT*, INT",N/A,"STRUCT*, INT",N/A
+6,cpython,Objects/dictobject.c,PyByteArray_FromStringAndSize,A,2,OBJECT,"IV, IV","CHAR*, INT",STRUCT*,,,0,redis,src/object.c,decrRefCountVoid,MD,1,N/A,OD,VOID*,N/A,VOID*,N/A
+7,cpython,Objects/bytearrayobject.c,_PyByteArray_FromBufferObject,A,1,OBJECT,IV,STRUCT*,STRUCT*,,,2,redis,src/object.c,freeMemoryOverheadData,D,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
+2,cpython,Objects/bytearrayobject.c,bytearray_iter,A,1,OBJECT,IV,STRUCT*,STRUCT*,,,2,redis,src/object.c,freeCallReplyInternal,D,1,N/A,RD  ,STRUCT*,N/A,STRUCT*,N/A
+5,cpython,Objects/bytesobject.c,_PyBytes_FromSize,A,2,OBJECT,"AS, RD","INT, INT",STRUCT*,,,2,redis,src/object.c,freeCallReply,D,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
+6,cpython,Objects/bytesobject.c,PyBytes_FromStringAndSize,A,2,OBJECT,"AS, IV","CHAR*, INT",STRUCT*,,,2,redis,src/object.c,freeClusterLink,D,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
+5,cpython,Objects/bytesobject.c,PyBytes_FromString,A,1,OBJECT,IV,CHAR*,STRUCT*,,,2,redis,src/object.c,freeClusterNode,D,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
+3,cpython,Objects/bytesobject.c,bytes_subtype_new,A,2,OBJECT,"IV, IV","STRUCT*, STRUCT*",STRUCT*,,,3,redis,src/cluster.c,clusterDelNode,D,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
+2,cpython,Objects/bytesobject.c,bytes_iter,A,1,OBJECT,IV,STRUCT*,STRUCT*,,,3,redis,src/cluster.c,clusterBlacklistCleanup,D,0,N/A,N/A,N/A,N/A,N/A,N/A
+0,cpython,Python/pyarena.c,_PyArena_Malloc,MA,2,OBJECT,"RD, AS","STRUCT*, INT",VOID*,,,2,redis,src/cluster.c,slotToKeyDestroy,D,1,N/A,RD,STRUCT*,N/A,STRUCT*,N/A
+0,cpython,Python/pyarena.c,_PyArena_New,MA,0,OBJECT,N/A,N/A,STRUCT*,,,2,redis,src/sentinel.c,redisAeCleanup,D,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
+0,cpython,Python/pyarena.c,block_new,MA,1,OBJECT,AS,INT,STRUCT*,,,2,redis,src/sentinel.c,freeSentinelLoadQueueEntry,D,1,N/A,OD,VOID*,N/A,VOID*,N/A
+0,cpython,Python/pyarena.c,block_alloc,MA,2,OBJECT,"RD, AS","STRUCT*, INT",VOID*,,,2,redis,src/sentinel.c,releaseSentinelAddr,D,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
+1,redis,src/zmalloc.c,ztrymalloc_usable,A,2,OBJECT,"AS, RD","INT, INT*",VOID*,,,2,redis,src/sentinel.c,freeSentinelConfig,D,0,N/A,N/A,N/A,N/A,N/A,N/A
+2,redis,src/zmalloc.c,zmalloc,A,1,OBJECT,AS ,INT,VOID*,,,2,redis,src/replication.c,freeReplicationBacklog,D,0,N/A,N/A,N/A,N/A,N/A,N/A
+2,redis,src/zmalloc.c,ztrymalloc ,A,1,OBJECT,AS,INT,VOID*,,,3,redis,src/replication.c,replicationUnsetMaster,D,0,N/A,N/A,N/A,N/A,N/A,N/A
+2,redis,src/zmalloc.c,zmalloc_usable,A,2,OBJECT,"AS, RD","INT, INT*",VOID*,,,2,redis,src/networking.c,freeClientReplyValue,D,1,N/A,OD,VOID*,N/A,VOID*,N/A
+1,redis,src/zmalloc.c,zmalloc_no_tcache,A,1,OBJECT,AS,INT,VOID*,,,2,redis,src/networking.c,moduleCloseKey,D,1,N/A,RD,STRUCT*,N/A,STRUCT*,N/A
+1,redis,src/zmalloc.c,ztrycalloc_usable,A,2,OBJECT,"AS, RD","INT, INT*",VOID*,,,2,redis,src/networking.c,listRelease,D,1,N/A,RD,STRUCT*,N/A,STRUCT*,N/A
+2,redis,src/zmalloc.c,zcalloc,A,1,OBJECT,AS,INT,VOID*,,,3,redis,src/networking.c,disconnectSlaves,D,0,N/A,N/A,N/A,N/A,N/A,N/A
+2,redis,src/zmalloc.c,ztrycalloc,A,1,OBJECT,AS,INT,VOID*,,,2,redis,src/networking.c,freeClient,D,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
+2,redis,src/zmalloc.c,zcalloc_usable,A,2,OBJECT,"AS, RD","INT, INT*",VOID*,,,2,redis,src/networking.c,freeClientOriginalArgv,D,1,N/A,RD,STRUCT*,N/A,STRUCT*,N/A
+1,redis,src/zmalloc.c,ztryrealloc_usable,A,3,OBJECT,"IV, AS, RD","VOID*, INT, PTR",VOID*,,,2,redis,src/networking.c,freeClientArgv,D,1,N/A,RD,STRUCT*,N/A,STRUCT*,N/A
+2,redis,src/zmalloc.c,zrealloc,RA,2,OBJECT,"IV, AS ","VOID*, INT",VOID*,,,0,redis,src/networking.c,freeClientAsync,MD,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
+2,redis,src/zmalloc.c,ztryrealloc,RA,2,OBJECT,"IV, AS","VOID*, INT",VOID*,,,0,redis,src/networking.c,freeClientsInAsyncFreeQueue,MD,0,N/A,N/A,N/A,N/A,N/A,N/A
+2,redis,src/zmalloc.c,zrealloc_usable,RA,3,OBJECT,"IV, AS, RD","VOID*, INT, INT*",VOID*,,,2,redis,src/sparkline.c,freeSparklineSequence,D,1,N/A,RD,STRUCT*,N/A,STRUCT*,N/A
+3,redis,src/zmalloc.c,zstrdup,A,1,OBJECT,IV,CHAR*,CHAR*,,,3,redis,src/redis-cli.c,freeHintsCallback,D,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
+3,redis,src/dict.c,dictCreate,A,1,OBJECT,IV,STRUCT*,STRUCT*,,,2,redis,src/redis-cli.c,freeClusterManagerNode,D,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
+4,redis,src/dict.c,dictExpand,RA,2,SUCCESS FLAG,"RD, AS, RD","STRUCT*, LONG",INT,,,2,redis,src/t_hash.c,hashTypeReleaseIterator,D,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
+3,redis,src/dict.c,dictGetIterator,A,1,OBJECT,IV,STRUCT*,STRUCT*,,,2,redis,src/object.c,freeStream,D,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
+4,redis,src/dict.c,dictGetSafeIterator,A,1,OBJECT,IV,STRUCT*,STRUCT*,,,2,redis,src/t_stream.c,streamFreeNACK,D,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
+3,redis,src/dict.c,dictAddRaw,A,3,OBJECT,"RD, IV, RD","STRUCT*, VOID*, STRUCT**",STRUCT*,,,2,redis,src/t_stream.c,streamFreeCG,D,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
+4,redis,src/dict.c,dictAdd,A,3,SUCCESS FLAG,"RD, IV, RD","STRUCT*, VOID*, VOID*",INT,,,2,redis,src/t_stream.c,streamFreeConsumer,D,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
+3,redis,src/sds.c,sds_malloc,A,1,OBJECT,AS,INT,VOID*,,,2,redis,deps/hihiredis.c,redisFree,D,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
+3,redis,src/sds.c,sds_realloc,RA,2,OBJECT,"IV, AS","VOID*, INT",VOID*,,,2,redis,deps/hihiredis.c,freeReplyObject,D,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
+3,redis,src/sds.c,_sdsnewlen,A,3,OBJECT,"IV, IV, IV","VOID*, INT, INT",STRUCT*,,,1,redis,deps/hialloc.c,hi_free,D,1,N/A,OD,VOID*,N/A,VOID*,N/A
+4,redis,src/sds.c,sdsnewlen,A,2,OBJECT,"IV, AS","VOID*, INT",STRUCT*,,,0,httpd,memory/unix/apr_pools.c,allocator_free,MD,2,N/A,"RD, OD","STRUCT*, STRUCT*",N/A,"STRUCT*, STRUCT*",N/A
+4,redis,src/sds.c,sdstrynewlen,A,2,OBJECT,"RD, IV, RD","VOID*, INT",STRUCT*,,,1,httpd,memory/unix/apr_pools.c,apr_allocator_free,D,2,N/A,"RD, OD","STRUCT*, STRUCT*",N/A,"STRUCT*, STRUCT*",N/A
+4,redis,src/sds.c,sdsfromlonglong,a,1,OBJECT,IV,LONGLONG,STRUCT*,,,0,httpd,memory/unix/apr_pools.c,apr_pool_clear,MD,1,N/A,RD,STRUCT*,N/A,STRUCT*,N/A
+4,redis,src/sds.c,sdsempty,A,0,OBJECT,N/A,N/A,STRUCT*,,,0,httpd,memory/unix/apr_pools.c,apr_pool_destroy,MD,1,N/A,RD,STRUCT*,N/A,STRUCT*,N/A
+4,redis,src/sds.c,sdsnew,A,1,OBJECT,IV,CHAR*,STRUCT*,,,1,httpd,memory/unix/apr_pools.c,pool_clear_debug,D,2,N/A,"RD, unused unused","STRUCT*, CHAR*",N/A,"STRUCT*, CHAR*",N/A
+4,redis,src/sds.c,sdsdup,A,1,OBJECT,IV,STRUCT*,STRUCT*,,,1,httpd,memory/unix/apr_pools.c,apr_pool_clear_debug,D,2,N/A,"RD, unused unused","STRUCT*, CHAR*",N/A,"STRUCT*, CHAR*",N/A
+3,redis,src/sds.c,_sdsMakeRoomFor,RA,3,OBJECT,"IV, AS, RD","STRUCT*, INT, INT",STRUCT*,,,0,httpd,shmem/unix/shm.c,apr_shm_remove,MD,2,SUCCESS FLAG,"OD, RD (unused)","CHAR*, STRUCT*",INT,"CHAR*, STRUCT*",INT
+4,redis,src/sds.c,sdsMakeRoomFor,RA,2,OBJECT,"IV, AS, RD","STRUCT*, INT",STRUCT*,,,1,httpd,shmem/unix/shm.c,apr_shm_delete,D,1,SUCCESS FLAG,OD,STRUCT*,INT,STRUCT*,INT
+4,redis,src/sds.c,sdsMakeRoomForNonGreedy,RA,2,OBJECT,"IV, AS, RD","STRUCT*, INT",STRUCT*,,,1,httpd,shmem/unix/shm.c,apr_shm_destroy,D,1,SUCCESS FLAG,OD,STRUCT*,INT,STRUCT*,INT
+3,redis,src/sds.c,sdsResize,RA,2,OBJECT,"IV, AS","STRUCT*, INT",STRUCT*,,,0,httpd,shmem/unix/shm.c,shm_cleanup_owner,MD,1,SUCCESS FLAG,OD,STRUCT*,INT,STRUCT*,INT
+3,redis,src/module.c,RM_Alloc,A,1,OBJECT,AS,INT,VOID*,,,0,httpd,tables/apr_skiplist.c,apr_skiplist_free,MD,2,N/A,"RD, OD","STRUCT*, void*",N/A,"STRUCT*, void*",N/A
+3,redis,src/module.c,RM_Calloc,A,2,OBJECT,"AS, AS","INT, INT",VOID*,,,1,httpd,tables/apr_skiplist.c,apr_skiplist_destroy,D,2,N/A,"OD, RD","STRUCT*, FUNCP",N/A,"STRUCT*, FUNCP",N/A
+3,redis,src/module.c,RM_Realloc,RA,2,OBJECT,"IV, AS","STRUCT*, INT",VOID*,,,1,httpd,tables/apr_skiplist.c,apr_skiplist_remove_all,D,2,N/A,"RD, RD","STRUCT*, FUNCP",N/A,"STRUCT*, FUNCP",N/A
+4,redis,src/module.c,RM_Strdup,A,1,OBJECT,IV,CHAR*,CHAR*,,,2,httpd,tables/apr_skiplist.c,skiplisti_destroy,D,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
+0,redis,src/module.c,RM_PoolAlloc,MA,2,OBJECT,"RD, AS","STRUCT*, INT",VOID*,,,1,httpd,mmap/unix/mmap.c,mmap_cleanup,D,1,SUCCESS FLAG,OD,STRUCT*,INT,STRUCT*,INT
+3,redis,src/module.c,RM_SetModuleAttribs,A,4,OBJECT,"RD, IV, IV, IV","STRUCT*, CHAR*, INT, INT",N/A,,,2,httpd,mmap/unix/mmap.c,apr_mmap_delete,D,1,SUCCESS FLAG,OD,STRUCT*,INT,STRUCT*,INT
+5,redis,src/module.c,RM_CreateString,A,3,OBJECT,"RD, IV, IV","STRUCT*, CHAR*, INT",STRUCT*,,,1,httpd,buckets/apr_brigade.c,apr_brigade_cleanup,D,1,SUCCESS FLAG,OD,STRUCT*,INT,STRUCT*,INT
+4,redis,src/module.c,RM_CreateStringPrintf,A,2+,OBJECT,"RD, IV","STRUCT*, CHAR*",STRUCT*,,,3,httpd,buckets/apr_brigade.c,apr_brigade_destroy,D,1,SUCCESS FLAG,OD,STRUCT*,INT,STRUCT*,INT
+6,redis,src/module.c,RM_CreateStringFromLongLong,A,2,OBJECT,"RD, IV","STRUCT*, LONGLONG",STRUCT*,,,2,httpd,buckets/apr_brigade.c,brigade_cleanup,D,1,SUCCESS FLAG,OD,STRUCT*,INT,STRUCT*,INT
+6,redis,src/module.c,RM_CreateStringFromDouble,A,2,OBJECT,"RD, IV","STRUCT*, DOUB",STRUCT*,,,1,httpd,buckets/apr_buckets_alloc.c,alloc_cleanup,D,1,SUCCESS FLAG,RD,STRUCT*,INT,STRUCT*,INT
+6,redis,src/module.c,RM_CreateStringFromLongDouble,A,3,OBJECT,"RD, IV, IV","STRUCT*, LONGDOUB, INT",STRUCT*,,,1,httpd,buckets/apr_buckets_alloc.c,apr_bucket_alloc_destroy,D,1,N/A,RD,STRUCT*,N/A,STRUCT*,N/A
+6,redis,src/module.c,RM_CreateStringFromString,A,2,OBJECT,"RD, IV","STRUCT*, STRUCT*",STRUCT*,,,0,httpd,buckets/apr_buckets_alloc.c,apr_bucket_free,MD,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
+5,redis,src/module.c,RM_CreateStringFromStreamID,A,2,OBJECT,"RD, IV","STRUCT*, STRUCT*",STRUCT*,,,1,httpd,buckets/apr_buckets_file.c,file_bucket_destroy,D,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
+3,redis,src/module.c,RM_CreateDict,A,1,OBJECT,RD,STRUCT*,STRUCT*,,,1,httpd,buckets/apr_buckets_mmap.c,mmap_bucket_destroy,D,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
+3,redis,src/module.c,RM_GetServerInfo,A,2,OBJECT,"RD, IV","STRUCT*, CHAR*",STRUCT*,,,1,httpd,buckets/apr_buckets_pool.c,pool_bucket_destroy,D,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
+3,redis,src/module.c,RM_GetDetachedThreadSafeContext,A,1,OBJECT,IV,STRUCT*,STRUCT*,,,1,httpd,crypto/apr_crypto_commoncrypto.c,crypto_block_cleanup,D,1,SUCCESS FLAG,RD ,STRUCT*,INT,STRUCT*,INT
+3,redis,src/module.c,RM_CreateModuleUser,A,1,OBJECT,IV,CHAR*,STRUCT*,,,1,httpd,crypto/apr_crypto_openssl.c,EVP_CIPHER_CTX_free,D,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
+3,redis,src/module.c,moduleCreateCommandProxy,A,7,OBJECT,"RD, IV IV, IV, IV, IV, IV","STRUCT*, STRUCT*, FUNCP, INT, INT, INT, INT",STRUCT*,,,2,httpd,crypto/apr_crypto_commoncrypto.c,crypto_block_cleanup,D,1,SUCCESS FLAG,RD,STRUCT*,INT,STRUCT*,INT
+5,redis,src/module.c,moduleCreateEmptyKey,A,2,SUCCESS FLAG,"RD, IV","STRUCT*, INT",INT,,,2,httpd,crypto/apr_crypto_nss.c,crypto_block_cleanup_helper,D,1,SUCCESS FLAG,RD,STRUCT*,INT,STRUCT*,INT
+3,redis,src/module.c,RM_OpenKey,A,3,OBJECT,"RD, IV, IV","STRUCT*, STRUCT*, INT",STRUCT*,,,1,httpd,dbd/apr_dbd_mysql.c,lob_bucket_destroy,D,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
+3,redis,src/t_list.c,listTypeInitIterator,A,3,OBJECT,"IV, IV, IV","STRUCT*, LONG, CHAR",STRUCT*,,,1,httpd,dbd/apr_dbd_odbc.c,odbc_lob_bucket_destroy,D,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
+4,redis,src/t_list.c,listTypeDup,A,1,OBJECT,IV,STRUCT*,STRUCT*,,,2,httpd,server/util.c,regex_cleanup,D,1,SUCCESS FLAG,OD,STRUCT*,INT,STRUCT*,INT
+3,redis,src/quicklist.c,quicklistCreate,A,0,OBJECT,N/A,N/A,PTR,,,2,httpd,server/util.c,ap_pregfree,D,2,N/A,"RD, OD","STRUCT*, STRUCT*",N/A,"STRUCT*, STRUCT*",N/A
+4,redis,src/quicklist.c,quicklistNew,A,2,OBJECT,"IV, IV","INT, INT",PTR,,,1,httpd,server/util.c,varbuf_cleanup,D,1,SUCCESS FLAG,RD,void*,INT,void*,INT
+4,redis,src/quicklist.c,quicklistDup,A,1,OBJECT,IV,PTR,PTR,,,1,httpd,server/util.c,ap_varbuf_free,D,1,N/A,RD,STRUCT*,N/A,STRUCT*,N/A
+4,redis,src/quicklist.c,quicklistCreateNode,A,0,OBJECT,N/A,N/A,PTR,,,1,httpd,server/util_pcre.c,ap_regfree,D,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
+5,redis,src/quicklist.c,__quicklistCreatePlainNode,A,2,OBJECT,"IV, IV","PTR, INT",PTR,,,0,memcached,slabs.c,do_slabs_free_chunked,MD,2,N/A,"OD, RD","PTR, INT",N/A,"PTR, INT",N/A
+4,redis,src/quicklist.c,quicklistAppendListpack,A,2,N/A,"RD, IV","PTR, CHAR*",N/A,,,0,memcached,slabs.c,do_slabs_free,MD,3,N/A,"OD, RD, RD","VOID*, INT, INT",N/A,"VOID*, INT, INT",N/A
+5,redis,src/quicklist.c,quicklistAppendPlainNode,A,3,N/A,"RD, IV, IV","PTR, CHAR*, INT",N/A,,,1,memcached,slabs.c,slabs_free,D,3,N/A,"OD, RD, RD","VOID*, INT, INT",N/A,"VOID*, INT, INT",N/A
+3,redis,src/quicklist.c,quicklistGetIterator,A,2,OBJECT,"RD, IV","PTR, INT",STRUCT*,,,2,memcached,slabs.c,slab_rebalance_cut_free,MD,2,N/A,"RD, OD","STRUCT*, STRUCT*",N/A,"STRUCT*, STRUCT*",N/A
+4,redis,src/quicklist.c,quicklistGetIteratorAtIdx,A,3,OBJECT,"RD, IV, IV","PTR, INT, INT",STRUCT*,,,3,memcached,items.c,item_free,D,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
+5,redis,src/quicklist.c,quicklistGetIteratorEntryAtIdx,A,3,OBJECT,"RD, IV, IV","PTR, INT, PTR",STRUCT*,,,1,memcached,items.c,do_item_remove,D,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
+3,redis,src/quicklist.c,_quicklistSaver,A,2,OBJECT,"AS, IV","CHAR*, INT",STRUCT*,,,1,memcached,slab_automove.c,slab_automove_free,D,1,N/A,OD,VOID*,N/A,VOID*,N/A
+3,redis,src/intset.c,intsetNew,A,0,OBJECT,N/A,N/A,STRUCT*,,,1,memcached,slab_automove.c,slab_automove_extstore_free,D,1,N/A,OD,VOID*,N/A,VOID*,N/A
+2,redis,src/intset.c,intsetResize,RA,2,OBJECT,"IV, AS","PTR, INT",STRUCT*,,,1,memcached,bipbuffer.c,bipbuf_free,D,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
+4,redis,src/intset.c,createSet,A,2,OBJECT,"IV, IV","INT, INT",STRUCT*,,,1,memcached,memcached.c,conn_free,D,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
+3,redis,src/listpack.c,lpNew,A,1,OBJECT,AS,INT,STRUCT*,,,2,memcached,memcached.c,rbuf_release,D,1,N/A,RD,STRUCT*,N/A,STRUCT*,N/A
+3,redis,src/listpack.c,lpShrinkToFit,RA,1,OBJECT,IV,PTR,STRUCT*,,,0,memcached,cache.c,cache_destroy,MD,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
+4,redis,src/listpack.c,createList,A,0,OBJECT,N/A,N/A,STRUCT*,,,1,memcached,cache.c,cache_free,D,2,N/A,"RD, OD","STRUCT*, VOID*",N/A,"STRUCT*, VOID*",N/A
+4,redis,src/listpack.c,createIntList,A,0,OBJECT,N/A,N/A,STRUCT*,,,0,memcached,cache.c,do_cache_free,MD,2,N/A,"RD, OD","STRUCT*, VOID*",N/A,"STRUCT*, VOID*",N/A
+3,redis,src/t_zset.c,zslCreateNode,A,3,OBJECT,"AS, IV, IV","INT, DOUB, STRUCT",STRUCT*,,,4,memcached,thread.c,item_remove,D,1,N/A,OD,STRUCT*,N/A,STRUCT*,N/A
+3,redis,src/t_zset.c,zslCreate,A,0,OBJECT,N/A,N/A,STRUCT*,,,0,ffmpeg,libavutil/mem.c,av_free,D,1,N/A,OD,,,void*,N/A
+3,redis,src/object.c,createObject,A,2,OBJECT,"IV, IV","INT, PTR",STRUCT*,,,1,ffmpeg,libavutil/mem.c,av_freep,D,1,N/A,OD,,,void*,N/A
+4,redis,src/object.c,createRawStringObject,A,2,OBJECT,"IV, IV","CHAR*, INT",STRUCT*,,,1,ffmpeg,libavutil/audio_fifo.c,av_audio_fifo_free,D,1,N/A,OD,,,ptr,N/A
+3,redis,src/object.c,createEmbeddedStringObject,A,2,OBJECT,"IV, IV","CHAR*, INT",STRUCT*,,,2,ffmpeg,libavutil/fifo.c,av_fifo_freep2,D,1,N/A,OD,,,ptr,N/A
+4,redis,src/object.c,createStringObject,A,2,OBJECT,"IV, IV","CHAR*, INT",STRUCT*,,,1,ffmpeg,libavutil/fifo.c,av_fifo_free,D,1,N/A,OD,,,ptr,N/A
+4,redis,src/object.c,tryCreateRawStringObject,A,2,OBJECT,"IV, IV","CHAR*, INT",STRUCT*,,,2,ffmpeg,libavutil/fifo.c,av_fifo_freep,D,1,N/A,OD,,,ptr,N/A
+4,redis,src/object.c,tryCreateStringObject,A,2,OBJECT,"IV, IV","CHAR*, INT",STRUCT*,,,2,ffmpeg,libavutil/dict.c,av_dict_free,D,1,N/A,OD,,,ptr,N/A
+4,redis,src/object.c,createStringObjectFromLongLongWithOptions,A,2,OBJECT,"IV, IV","INT, INT",STRUCT*,,,2,ffmpeg,libavutil/hwcontext_cuda.c,cuda_device_uninit,D,1,N/A,RD,,,ptr,N/A
+5,redis,src/object.c,createStringObjectFromLongLong,A,1,OBJECT,IV,INT,STRUCT*,,,1,ffmpeg,libavutil/buffer.c,av_buffer_default_free,D,2,N/A,"not used, OD",,,"void*, ptr",N/A
+5,redis,src/object.c,createStringObjectFromLongLongForValue,A,1,OBJECT,IV,INT,STRUCT*,,,2,ffmpeg,libavutil/buffer.c,av_buffer_unref,D,1,N/A,OD,,,ptr,N/A
+5,redis,src/object.c,createStringObjectFromLongDouble,A,2,OBJECT,"IV, IV","DOUB, INT",STRUCT*,,,2,ffmpeg,libavutil/buffer.c,buffer_pool_flush,D,1,N/A,RD,,,ptr,N/A
+5,redis,src/object.c,dupStringObject,A,1,OBJECT,IV,PTR,STRUCT*,,,2,ffmpeg,libavutil/buffer.c,buffer_pool_free,D,1,N/A,OD,,,ptr,N/A
+4,redis,src/object.c,createQuicklistObject,A,0,OBJECT,N/A,N/A,STRUCT*,,,3,ffmpeg,libavutil/buffer.c,av_buffer_pool_uninit,D,1,N/A,OD,,,ptr,N/A
+4,redis,src/object.c,createSetObject,A,0,OBJECT,N/A,N/A,STRUCT*,,,3,ffmpeg,libavutil/buffer.c,pool_release_buffer,D,2,N/A,"RD, not used",,,"ptr, uint*",N/A
+4,redis,src/object.c,createIntsetObject,A,0,OBJECT,N/A,N/A,STRUCT*,,,2,ffmpeg,libavutil/frame.c,free_side_data,D,1,N/A,OD,,,ptr,N/A
+4,redis,src/object.c,createHashObject,A,0,OBJECT,N/A,N/A,STRUCT*,,,2,ffmpeg,libavutil/frame.c,av_frame_unref,D,1,N/A,RD,,,ptr,N/A
+4,redis,src/object.c,createZsetObject,A,0,OBJECT,N/A,N/A,STRUCT*,,,2,ffmpeg,libavutil/frame.c,wipe_side_data,D,1,N/A,RD,,,ptr,N/A
+4,redis,src/object.c,createZsetListpackObject,A,0,OBJECT,N/A,N/A,STRUCT*,,,2,ffmpeg,libavutil/frame.c,av_frame_free,D,1,N/A,OD,,,ptr,N/A
+4,redis,src/object.c,createStreamObject,A,0,OBJECT,N/A,N/A,STRUCT*,,,1,ffmpeg,libavutil/hwcontext_opencl.c,opencl_pool_free,D,1,N/A,"RD, OD",,,"void*, uint*",N/A
+4,redis,src/object.c,createModuleObject,A,2,OBJECT,"IV, IV","PTR, PTR",STRUCT*,,,1,ffmpeg,libavutil/aes_ctr.c,av_aes_ctr_free,D,1,N/A,OD,,,ptr,N/A
+3,redis,src/object.c,getMemoryOverheadData,A,0,OBJECT,N/A,N/A,STRUCT*,,,1,ffmpeg,libavutil/hwcontext_vdpau.c,vdpau_buffer_free,D,1,N/A,"RD, OD",,,"void*, uint*",N/A
+3,redis,src/call_reply.c,callReplyCreate,A,2,OBJECT,"IV, IV","STRUCT, PTR",STRUCT*,,,2,ffmpeg,libavutil/hwcontext_vdpau.c,vdpau_device_free,D,1,N/A,RD,,,ptr,N/A
+3,redis,src/cluster.c,createClusterLink,A,1,OBJECT,IV,PTR,STRUCT*,,,1,ffmpeg,libavutil/vulkan.c,destroy_imageview,D,2,N/A,"RD, OD",,,"void*, uint*",N/A
+3,redis,src/cluster.c,createClusterNode,A,2,OBJECT,IV,"CHAR*, INT",STRUCT*,,,1,ffmpeg,libavutil/vulkan.c,free_pipeline,D,2,N/A,"RD, OD",,,"ptr, ptr",N/A
+5,redis,src/cluster.c,clusterAddNode,A,1,N/A,IV,PTR,STRUCT*,,,2,ffmpeg,libavutil/hwcontext.c,hwframe_ctx_free,D,2,N/A,"unused, OD",,,"void*, uint*",N/A
+5,redis,src/cluster.c,clusterBlacklistAddNode,A,1,N/A,IV,PTR,STRUCT*,,,2,ffmpeg,libavutil/hwcontext.c,hwdevice_ctx_free,D,2,N/A,"unused, OD",,,"void*, uint*",N/A
+3,redis,src/cluster.c,slotToKeyInit,A,1,N/A,RD,PTR,STRUCT*,,,1,ffmpeg,libavutil/hwcontext.c,ff_hwframe_unmap,D,2,N/A,"RD, OD",,,"void*, uint*",N/A
+3,redis,src/sentinel.c,dupSentinelAddr,A,1,OBJECT,IV,PTR,STRUCT*,,,1,ffmpeg,libavutil/vulkan.c,free_exec_ctx,D,2,N/A,"RD, OD",,,"ptr, ptr",N/A
+3,redis,src/sentinel.c,createSentinelAddr,A,2,OBJECT,IV,"CHAR*, INT",STRUCT*,,,1,ffmpeg,libavutil/hwcontext_vulkan.c,vulkan_frame_free,D,2,N/A,"RD, OD",,,"void*, uint*",N/A
+3,redis,src/sentinel.c,createReplicationBacklog,A,0,N/A,N/A,N/A,STRUCT*,,,2,ffmpeg,libavutil/hwcontext_vulkan.c,vulkan_free_internal,D,1,N/A,RD,,,ptr,N/A
+3,redis,src/networking.c,dupClientReplyValue,A,1,OBJECT,IV,PTR,STRUCT*,,,1,ffmpeg,libavutil/hwcontext_vulkan.c,vulkan_unmap_frame,D,2,N/A,"RD, RD",,,"ptr, ptr",N/A
+3,redis,src/networking.c,createClient,A,1,OBJECT,RD,PTR,STRUCT*,,,1,ffmpeg,libavutil/hwcontext_vulkan.c,free_buf,D,2,N/A,"RD, OD",,,"void*, uint*",N/A
+3,redis,src/networking.c,createSparklineSequence,A,0,OBJECT,N/A,N/A,STRUCT*,,,2,ffmpeg,libavutil/hash.c,av_hash_freep,D,1,N/A,OD,,,ptr,N/A
+3,redis,src/redis-cli.c,clusterManagerNewNode,A,2,OBJECT,"RD, IV","CHAR*, INT",STRUCT*,,,2,ffmpeg,libavutil/hwcontext_dxva2.c,dxva2_device_free,D,1,N/A,RD,,,ptr,N/A
+3,redis,src/t_hash.c,hashTypeInitIterator,A,1,OBJECT,IV,PTR,STRUCT*,,,2,ffmpeg,libavutil/slicethread.c,avpriv_slicethread_free,D,1,N/A,OD,,,ptr,N/A
+3,redis,src/t_stream.c,streamNew,A,0,OBJECT,N/A,N/A,STRUCT*,,,1,ffmpeg,libavutil/hwcontext_drm.c,drm_unmap_frame,D,2,N/A,"RD, RD",,,"ptr, ptr",N/A
+4,redis,src/t_stream.c,createObjectFromStreamID,A,1,OBJECT,IV,PTR,STRUCT*,,,2,ffmpeg,libavutil/eval.c,av_expr_free,D,2,N/A,OD,,,ptr,N/A
+5,redis,src/t_stream.c,streamCreateNACK,A,1,OBJECT,IV,PTR,STRUCT*,,,2,ffmpeg,libavutil/threadmessage.c,av_thread_message_queue_free,D,1,N/A,OD,,,ptr,N/A
+5,redis,src/t_stream.c,streamCreateCG,A,4,OBJECT,"IV, IV, IV, IV","PTR, CHAR*, INT, PTR",STRUCT*,,,2,ffmpeg,libavutil/vulkan_shaderc.c,shdc_uninit,D,1,N/A,OD,,,ptr,N/A
+5,redis,src/t_stream.c,streamCreateConsumer,A,5,OBJECT,"IV, IV, IV, IV, IV","PTR, STRUCT, PTR, INT, INT",STRUCT*,,,1,ffmpeg,libavutil/encryption_info.c,av_encryption_info_free,D,1,N/A,OD,,,ptr,N/A
+3,redis,deps/hihiredis.c,redisContextInit,A,0,OBJECT,N/A,N/A,STRUCT*,,,1,ffmpeg,libavutil/encryption_info.c,av_encryption_init_info_free,D,1,N/A,OD,,,ptr,N/A
+3,redis,deps/hihiredis.c,createReplyObject,A,1,OBJECT,IV,INT,STRUCT*,,,1,ffmpeg,libavutil/pca.c,ff_pca_free,D,1,N/A,OD,,,ptr,N/A
+2,redis,deps/hialloc.c,hi_malloc,A,1,OBJECT,AS,INT,VOID*,,,1,ffmpeg,libavutil/hwcontext_d3d11va.c,free_texture,D,2,N/A,"RD, OD",,,"void*, uint*",N/A
+2,redis,deps/hialloc.c,hi_calloc,A,2,OBJECT,"AS, AS","INT, INT",VOID*,,,1,ffmpeg,libavutil/hmac.c,av_hmac_free,D,1,N/A,OD,,,ptr,N/A
+2,redis,deps/hialloc.c,hi_realloc,RA,2,OBJECT,"IV, AS","PTR, INT",VOID*,,,1,ffmpeg,libavutil/tree.c,av_tree_destroy,D,1,N/A,OD,,,ptr,N/A
+2,redis,deps/hialloc.c,hi_strdup,A,1,OBJECT,IV,PTR,VOID*,,,2,ffmpeg,libavcodec/nvdec.c,nvdec_decoder_free,D,2,N/A,"unused, OD",,,"void*, uint*",N/A
+0,httpd,memory/unix/apr_pools.c,allocator_alloc,MA,2,OBJECT,"RD, AS","PTR, INT",VOID*,,,2,ffmpeg,libavcodec/nvdec.c,nvdec_fdd_priv_free,D,1,N/A,OD,,,void*,N/A
+1,httpd,memory/unix/apr_pools.c,apr_allocator_alloc,A,2,OBJECT,"RD, AS","PTR, INT",VOID*,,,2,ffmpeg,libavcodec/avpacket.c,av_packet_free,D,1,N/A,OD,,,ptr,N/A
+0,httpd,memory/unix/apr_pools.c,apr_palloc,MA,2,OBJECT,"RD, AS","PTR, INT",VOID*,,,2,ffmpeg,libavcodec/avpacket.c,av_packet_free_side_data,D,1,N/A,RD,,,ptr,N/A
+1,httpd,memory/unix/apr_pools.c,apr_pcalloc,MA,2,OBJECT,"RD, AS","PTR, INT",VOID*,,,2,ffmpeg,libavcodec/avpacket.c,avpriv_packet_list_free,D,1,N/A,RD,,,ptr,N/A
+0,httpd,memory/unix/apr_pools.c,pool_alloc,A,2,OBJECT,"RD, AS","PTR, INT",VOID*,,,1,ffmpeg,libavcodec/dcaenc.c,subband_bufer_free,D,1,N/A,RD,,,ptr,N/A
+1,httpd,memory/unix/apr_pools.c,apr_palloc_debug,A,3,OBJECT,"RD, AS, unused","PTR, INT, INT",VOID*,,,2,ffmpeg,libavcodec/dcaadpcm.c,ff_dcaadpcm_free,D,1,N/A,OD,,,ptr,N/A
+1,httpd,memory/unix/apr_pools.c,apr_pcalloc_debug,A,3,OBJECT,"RD, AS, unused","PTR, INT, INT",VOID*,,,2,ffmpeg,libavcodec/options.c,avcodec_free_context,D,1,N/A,OD,,,ptr,N/A
+0,httpd,shmem/unix/shm.c,apr_shm_create,MA,4,SUCCESS FLAG,"IV, IV","DPTR, INT, CHAR*, PTR",INT,,,1,ffmpeg,libavcodec/videotoolbox.c,videotoolbox_buffer_release,D,2,N/A,"unused, OD",,,"void*, uint*",N/A
+0,httpd,shmem/unix/shm.c,apr_shm_create_ex,A,5,SUCCESS FLAG,"RD, IV, IV, RD, unused","DPTR, INT, CHAR*, PTR, INT",INT,,,3,ffmpeg,libavcodec/mpegpicture.c,free_picture_tables,D,1,N/A,RD,,,ptr,N/A
+2,httpd,tables/apr_hash.c,alloc_array,A,2,OBJECT,"RD, AS","PTR, INT",STRUCT*,,,1,ffmpeg,libavcodec/dts2pts_bsf.c,free_node,D,2,flag,"unused, OD",,,"void*, void*",int
+2,httpd,tables/apr_hash.c,apr_hash_make,A,1,OBJECT,RD ,PTR,STRUCT*,,,1,ffmpeg,libavcodec/v4l2_m2m.c,v4l2_m2m_destroy_context,D,2,N/A,"unused, OD",,,"void*, uint*",N/A
+3,httpd,tables/apr_hash.c,apr_hash_make_custom,A,2,OBJECT,"RD, IV","PTR, FUNCP",STRUCT*,,,2,ffmpeg,libavcodec/mediacodec_wrapper.c,mediaformat_jni_delete,D,1,flag,OD,,,ptr,int
+2,httpd,tables/apr_hash.c,apr_hash_copy,A,2,OBJECT,"RD, IV","PTR, PTR",STRUCT*,,,2,ffmpeg,libavcodec/mediacodec_wrapper.c,mediacodec_jni_delete,D,1,flag,OD,,,ptr,int
+2,httpd,tables/apr_hash.c,apr_hash_merge,A,5,OBJECT,"RD, IV","PTR, PTR, PTR, FUNCP, PTR",STRUCT*,,,1,ffmpeg,libavcodec/mediacodec_wrapper.c,mediaformat_ndk_delete,D,1,flag,OD,,,ptr,int
+3,httpd,tables/apr_hash.c,apr_hash_overlay,A,3,OBJECT,"RD, IV, IV","PTR, PTR, PTR",STRUCT*,,,1,ffmpeg,libavcodec/mediacodec_wrapper.c,mediacodec_ndk_delete,D,1,flag,OD,,,ptr,int
+0,httpd,tables/apr_skiplist.c,apr_skiplist_alloc,MA,2,OBJECT,"RD, AS","PTR, INT",VOID*,,,2,ffmpeg,libavcodec/bsf.c,av_bsf_list_free,D,1,N/A,OD,,,ptr,N/A
+2,httpd,tables/apr_skiplist.c,skiplisti_init,A,2,SUCCESS FLAG,"RD, RD","DPTR, PTR",INT,,,2,ffmpeg,libavcodec/options.c,avcodec_free_context,D,1,N/A,OD,,,ptr,N/A
+3,httpd,tables/apr_skiplist.c,apr_skiplist_init,A,2,SUCCESS FLAG,"RD, RD","DPTR, PTR",INT,,,2,ffmpeg,libavcodec/get_buffer.c,frame_pool_free,D,2,N/A,"unused, OD",,,"void*, uint*",N/A
+0,httpd,tables/apr_skiplist.c,skiplist_new_node,MA,1,OBJECT,RD,PTR,STRUCT*,,,2,ffmpeg,libavcodec/opusdec_celt.c,ff_celt_free,D,1,N/A,OD,,,ptr,N/A
+1,httpd,tables/apr_tables.c,apr_array_make,A,3,OBJECT,"RD, IV, IV","PTR, INT, INT",STRUCT*,,,1,ffmpeg,libavcodec/libjxl.c,libjxl_av_free,D,2,N/A,"unused, OD",,,"void*, void*",N/A
+1,httpd,tables/apr_tables.c,make_array_core,A,5,N/A,"RD, RD, AS, AS, RD","PTR, PTR, INT, INT, INT",N/A,,,2,ffmpeg,libavcodec/opus_pvq.c,ff_celt_pvq_uninit,D,1,N/A,OD,,,ptr,N/A
+1,httpd,tables/apr_tables.c,apr_array_copy,A,2,OBJECT,"RD, IV","PTR, PTR",STRUCT*,,,1,ffmpeg,libavcodec/vaapi_encode.c,vaapi_encode_free,D,2,flag,"RD, OD",,,"ptr, ptr",int
+1,httpd,tables/apr_tables.c,apr_array_copy_hdr,A,2,OBJECT,"RD, IV","PTR, PTR",STRUCT*,,,1,ffmpeg,libavcodec/psymodel.c,ff_psy_preprocess_end,D,1,N/A,OD,,,ptr,N/A
+2,httpd,tables/apr_tables.c,apr_array_append,A,3,OBJECT,"RD, IV, IV","PTR, PTR, PTR",STRUCT*,,,2,ffmpeg,libavcodec/decode.c,decode_data_free,D,2,N/A,"unused, OD",,,"void*, uint*",N/A
+1,httpd,tables/apr_tables.c,apr_table_make,A,2,OBJECT,"RD, IV","PTR, INT",STRUCT*,,,1,ffmpeg,libavcodec/omx.c,omx_deinit,D,1,N/A,OD,,,ptr,N/A
+1,httpd,tables/apr_tables.c,apr_table_copy,A,2,OBJECT,"RD, IV","PTR, PTR",STRUCT*,,,1,ffmpeg,libavcodec/fft_template.c,ff_fft_end,D,1,N/A,RD,,,ptr,N/A
+2,httpd,tables/apr_tables.c,apr_table_clone,A,2,OBJECT,"RD, IV","PTR, PTR",STRUCT*,,,1,ffmpeg,libavcodec/avfft.c,av_fft_end,D,1,N/A,OD,,,ptr,N/A
+1,httpd,tables/apr_tables.c,apr_table_overlay,A,3,OBJECT,"RD, IV, IV","PTR, PTR, PTR",STRUCT*,,,1,ffmpeg,libavcodec/avfft.c,av_mdct_end,D,1,N/A,OD,,,ptr,N/A
+1,httpd,tables/apr_tables.c,apr_array_pstrcat,A,3,OBJECT,"RD, IV, IV","PTR, PTR, CHAR*",STRUCT*,,,1,ffmpeg,libavcodec/avfft.c,av_rdft_end,D,1,N/A,OD,,,ptr,N/A
+1,httpd,dso/unix/dso.c,apr_os_dso_handle_put,A,3,SUCCESS FLAG,"RD, IV, IV","DPTR, STRUCT, PTR",INT,,,1,ffmpeg,libavcodec/avfft.c,av_dct_end,D,1,N/A,OD,,,ptr,N/A
+1,httpd,locks/unix/global_mutex.c,apr_global_mutex_create,A,4,SUCCESS FLAG,"RD, IV, IV, RD","DPTR, CHAR*, STRUCT, PTR",INT,,,3,ffmpeg,libavcodec/libdav1d.c,libdav1d_user_data_free,D,1,N/A,"RD, OD",,,"uint*, void*",N/A
+1,httpd,locks/netware/proc_mutex.c,apr_proc_mutex_create,A,4,SUCCESS FLAG,"RD, IV, IV, RD","DPTR, CHAR*, STRUCT, PTR",INT,,,1,ffmpeg,libavcodec/zlib_wrapper.c,free_wrapper,D,2,N/A,"unused, OD",,,"void*, void*",N/A
+1,httpd,locks/netware/thread_cond.c,apr_thread_cond_create,A,2,SUCCESS FLAG,"RD, RD","DPTR, PTR",INT,,,2,ffmpeg,libavcodec/flac_parser.c,flac_fifo_free,D,1,N/A,OD,,,ptr,N/A
+1,httpd,locks/netware/thread_mutex.c,apr_thread_mutex_create,A,3,SUCCESS FLAG,"RD, RD, RD","DPTR, INT, PTR",INT,,,2,ffmpeg,libavcodec/bink.c,free_bundles,D,1,N/A,OD,,,ptr,N/A
+1,httpd,locks/unix/thread_rwlock.c,apr_thread_rwlock_create,A,2,SUCCESS FLAG,"RD, RD","DPTR, PTR",INT,,,2,ffmpeg,libavcodec/codec_par.c,avcodec_parameters_free,D,1,N/A,OD,,,ptr,N/A
+2,httpd,strings/apr_strings.c,apr_pstrdup,A,2,OBJECT,"RD, IV","PTR, CHAR*",VOID*,,,1,ffmpeg,libavcodec/mediacodec_surface.c,ff_mediacodec_surface_unref,D,2,flag,"OD, RD",,,"ptr, void*",int
+1,httpd,strings/apr_strings.c,apr_pstrndup,A,3,OBJECT,"RD, IV, AS","PTR, CHAR*, INT",VOID*,,,2,ffmpeg,libavcodec/mediacodec.c,av_mediacodec_default_free,D,1,N/A,OD,,,ptr,N/A
+1,httpd,strings/apr_strings.c,apr_pstrmemdup,A,3,OBJECT,"RD, IV, AS","PTR, PTR, INT",VOID*,,,2,ffmpeg,libavcodec/qsv.c,mids_buf_free,D,2,N/A,"RD, OD",,,"void*, uint*",N/A
+1,httpd,strings/apr_strings.c,apr_pmemdup,A,3,OBJECT,"RD, IV, AS","PTR, PTR, INT",VOID*,,,2,ffmpeg,libavcodec/qsv.c,qsv_frame_free,D,2,flag,"unused, OD",,,"ptr, ptr",int
+1,httpd,strings/apr_strings.c,apr_pstrcat,A,1+,OBJECT,"RD, ",PTR,VOID*,,,1,ffmpeg,libavcodec/cbs_sei.c,cbs_free_user_data_registered,D,2,N/A,"unused, OD",,,"ptr, ptr",N/A
+1,httpd,strings/apr_strings.c,apr_pstrcatv,A,4,OBJECT,"RD, IV, AS, AS","PTR, PTR, INT, PTR",VOID*,,,1,ffmpeg,libavcodec/cbs_sei.c,cbs_free_user_data_unregistered,D,2,N/A,"unused, OD",,,"ptr, ptr",N/A
+1,httpd,strings/apr_strings.c,apr_itoa,A,2,OBJECT,"RD, IV","PTR, INT",VOID*,,,1,ffmpeg,libavcodec/cbs_sei.c,ff_cbs_sei_free_message_list,D,1,N/A,RD,,,ptr,N/A
+1,httpd,strings/apr_strings.c,apr_ltoa,A,2,OBJECT,"RD, IV","PTR, INT",VOID*,,,1,ffmpeg,libavcodec/rkmppdec.c,rkmpp_release_decoder,D,2,N/A,"unused, OD",,,"void*, uint*",N/A
+1,httpd,strings/apr_strings.c,apr_off_t_toa,A,2,OBJECT,"RD, IV","PTR, INT",VOID*,,,1,ffmpeg,libavcodec/rkmppdec.c,rkmpp_release_frame,D,2,N/A,"OD, RD",,,"void*, uint*",N/A
+1,httpd,misc/unix/otherchild.c,apr_proc_other_child_register,A,5,N/A,"IV, IV, IV, IV, RD","PTR, FUNCP, PTR, PTR, PTR",N/A,,,1,ffmpeg,libavcodec/jpeglsenc.c ,encode_jpegls_close,D,1,flag,OD,,,ptr,int
+1,httpd,mmap/unix/mmap.c,apr_mmap_create,A,6,SUCCESS FLAG,"RD, IV, IV, IV, IV, RD","DPTR, PTR, INT, INT, INT, PTR",INT,,,0,ffmpeg,libavdevice/xcbgrab.c,free_shm_buffer,D,2,N/A,"unused, OD",,,"void*, uint*",N/A
+2,httpd,mmap/unix/mmap.c,apr_mmap_dup,A,3,SUCCESS FLAG,"RD, IV, RD","DPTR, PTR, PTR",INT,,,1,ffmpeg,libswscale/utils.c,sws_freeContext,D,1,N/A,OD,,,ptr,N/A
+1,httpd,network_io/unix/sockaddr.c,apr_sockaddr_ip_get,A,2,SUCCESS FLAG,"RD, IV ","DPTR, PTR",INT,,,1,ffmpeg,libswscale/utils.c,sws_freeVec,D,1,N/A,OD,,,ptr,N/A
+1,httpd, network_io/unix/sockaddr.c,apr_ipsubnet_create,A,4,SUCCESS FLAG,"RD, IV, RD","DPTR, CHAR*, CHAR*, PTR",INT,,,1,ffmpeg,libswscale/utils.c,sws_freeFilter,D,1,N/A,OD,,,ptr,N/A
+1,httpd,network_io/unix/sockets.c,alloc_socket,A,2,N/A,"RD, RD","DPTR, PTR",N/A,,,2,ffmpeg,libavfilter/framepool.c,ff_frame_pool_uninit,D,1,N/A,OD,,,ptr,N/A
+2,httpd,network_io/unix/sockets.c,apr_socket_create,A,5,SUCCESS FLAG,"RD, IV, RD, RD","DPTR, INT, INT, INT, PTR",INT,,,1,ffmpeg,libavfilter/vf_pullup.c,free_field_queue,D,1,N/A,RD,,,ptr,N/A
+1,httpd,network_io/unix/sockets.c,apr_socket_data_set,A,4,SUCCESS FLAG,"RD, IV, IV, IV","PTR, PTR, CHAR*, FUNCP",INT,,,2,ffmpeg,libavfilter/graphparser.c,avfilter_inout_free,D,1,N/A,OD,,,ptr,N/A
+1,httpd,random/unix/sha2_glue.c,apr_crypto_sha256_new,A,1,OBJECT,RD,PTR,STRUCT*,,,2,ffmpeg,libavfilter/framequeue.c,ff_framequeue_free,D,1,N/A,OD,,,ptr,N/A
+1,httpd,random/unix/apr_random.c,apr_random_standard_new,A,1,OBJECT,RD,PTR,STRUCT*,,,2,ffmpeg,libavfilter/avfilter.c,avfilter_link_free,D,1,N/A,OD,,,ptr,N/A
+1,httpd,threadproc/unix/proc.c,apr_procattr_create,A,2,SUCCESS FLAG,"RD, RD","DPTR, PTR",INT,,,3,ffmpeg,libavfilter/avfilter.c,free_link,D,1,N/A,OD,,,ptr,N/A
+1,httpd,threadproc/unix/proc.c,apr_procattr_perms_set_register,A,4,SUCCESS FLAG,"RD, IV, IV, IV","PTR, FUNCP, PTR, STRUCT",INT,,,1,ffmpeg,libavfilter/avfilter.c,avfilter_free,D,1,N/A,OD,,,ptr,N/A
+1,httpd,threadproc/unix/thread.,apr_threadattr_create,A,2,SUCCESS FLAG,"RD, RD","DPTR, PTR",INT,,,2,ffmpeg,libavfilter/vf_morpho.c,free_lut,D,1,N/A,OD,,,ptr,N/A
+1,httpd,threadproc/unix/thread.c,apr_thread_create,A,5,SUCCESS FLAG,"RD, IV, IV, IV, RD","DPTR, PTR, FUNCP, PTR, PTR",INT,,,2,ffmpeg,libavfilter/dnn/queue.c,ff_queue_destroy,D,1,N/A,OD,,,ptr,N/A
+1,httpd,threadproc/unix/thread.c,apr_thread_once_init,A,2,SUCCESS FLAG,"RD, RD","DPTR, PTR",INT,,,2,ffmpeg,libavfilter/dnn/dnn_backend_tf.c,free_buffer,D,2,N/A,"OD, unused",,,"void*, size_t",N/A
+1,httpd,threadproc/unix/threadpriv.c,apr_threadkey_private_create,A,3,SUCCESS FLAG,"RD, IV, RD","DPTR, FUNCP, PTR",INT,,,2,ffmpeg,libavfilter/dnn/dnn_backend_tf.c,destroy_request_item,D,1,N/A,OD,,,ptr,N/A
+1,httpd,buckets/apr_brigade.c,apr_brigade_create,A,2,OBJECT,"RD, IV","PTR, PTR",STRUCT*,,,2,ffmpeg,libavfilter/qsvvpp.c,frame_free,D,2,flag,"unused, OD",,,"ptr, ptr",int
+0,httpd,buckets/apr_buckets_alloc.c,apr_bucket_alloc_create,MA,1,OBJECT,RD,PTR,STRUCT*,,,2,ffmpeg,libavfilter/qsvvpp.c,ff_qsvvpp_free,D,1,flag,OD,,,ptr,int
+1,httpd,buckets/apr_buckets_alloc.c,apr_bucket_alloc_create_ex,A,1,OBJECT,RD,PTR,STRUCT*,,,2,ffmpeg,libavfilter/avfiltergraph.c,avfilter_graph_free,D,1,N/A,OD,,,ptr,N/A
+0,httpd,buckets/apr_buckets_alloc.c,apr_bucket_alloc,MA,2,OBJECT,"AS, RD","INT, PTR",VOID*,,,2,ffmpeg,libavformat/rtmppkt.c,ff_rtmp_packet_destroy,D,1,N/A,OD,,,ptr,N/A
+1,httpd,buckets/apr_buckets_eos.c,apr_bucket_eos_create,A,1,OBJECT,RD,PTR,STRUCT*,,,2,ffmpeg,libavformat/aviobuf.c,avio_context_free,D,1,N/A,OD,,,ptr,N/A
+1,httpd,buckets/apr_buckets_file.c,apr_bucket_file_make,A,5,parent obj,"RD, IV, IV, IV, IV","PTR, PTR, INT, INT, PTR",STRUCT*,,,2,ffmpeg,libavformat/avio.c,avio_free_directory_entry,D,1,N/A,OD,,,ptr,N/A
+1,httpd,buckets/apr_buckets_file.c,apr_bucket_file_create,A,5,OBJECT,"IV, IV, IV, IV, RD","PTR, INT, INT, PTR, PTR",STRUCT*,,,2,ffmpeg,libavformat/avio.c,avio_close_dir,D,1,flag,OD,,,ptr,int
+1,httpd,buckets/apr_buckets_flush.c,apr_bucket_flush_create,A,1,OBJECT,RD,PTR,STRUCT*,,,2,ffmpeg,libavformat/imf_cpl.c,ff_imf_cpl_free,D,1,N/A,OD,,,ptr,N/A
+1,httpd,buckets/apr_buckets_heap.c,apr_bucket_heap_make,A,4,parent obj,"IV, IV, IV, RD","PTR, CHAR*, INT, FUNCP",STRUCT*,,,1,ffmpeg,libavformat/nut.c,enu_free,D,2,flag,"unused, OD",,,"void*, void*",int
+1,httpd,buckets/apr_buckets_heap.c,apr_bucket_heap_create,A,4,OBJECT,"IV, IV, IV, RD","CHAR*, INT, FUNCP, PTR",STRUCT*,,,3,ffmpeg,libavformat/segment.c,close_null_ctxp,D,1,N/A,OD,,,ptr,N/A
+1,httpd,buckets/apr_buckets_mmap.c,apr_bucket_mmap_make,A,4,parent obj,"IV, IV, IV, RD","PTR, PTR, INT, INT",STRUCT*,,,1,ffmpeg,libpostproc/postprocess.c,pp_free_mode,D,1,N/A,OD,,,ptr,N/A
+1,httpd,buckets/apr_buckets_mmap.c,apr_bucket_mmap_create,A,4,OBJECT,"IV, IV, IV, RD","PTR, INT, INT, PTR",STRUCT*,,,1,ffmpeg,libpostproc/postprocess.c,pp_free_context,D,1,N/A,OD,,,ptr,N/A
+1,httpd,buckets/apr_buckets_pipe.c,apr_bucket_pipe_create,A,2,OBJECT,"IV, RD","PTR, PTR",STRUCT*,,,2,ffmpeg,libswresample/audioconvert.c,swri_audio_convert_free,D,1,N/A,OD,,,ptr,N/A
+1,httpd,buckets/apr_buckets_pool.c,apr_bucket_pool_make,A,4,parent obj,"IV, IV, IV, RD","PTR, CHAR*, INT, PTR",STRUCT*,,,1,ffmpeg,libswresample/swresample.c,free_temp,D,1,N/A,RD,,,ptr,N/A
+1,httpd,buckets/apr_buckets_pool.c,apr_bucket_pool_create,A,4,OBJECT,"IV, IV, IV, RD","CHAR*, INT, PTR, PTR",STRUCT*,,,2,ffmpeg,libswresample/swresample.c,swr_free,D,1,N/A,OD,,,ptr,N/A
+1,httpd,buckets/apr_buckets_simple.c,apr_bucket_simple_copy,A,2,SUCCESS FLAG,"RD, IV","PTR, DPTR",INT,,,2,ffmpeg,fftools/objpool.c,objpool_free,D,1,N/A,OD,,,ptr,N/A
+2,httpd,buckets/apr_buckets_simple.c,apr_bucket_simple_split,A,2,SUCCESS FLAG,"IV, IV","PTR, INT",INT,,,3,ffmpeg,fftools/objpool.c,free_packet,D,1,N/A,OD,,,ptr,N/A
+1,httpd,buckets/apr_buckets_simple.c,apr_bucket_immortal_create,A,3,OBJECT,"IV, IV, RD","CHAR*, INT, PTR",STRUCT*,,,3,ffmpeg,fftools/objpool.c,free_frame,D,1,N/A,OD,,,ptr,N/A
+1,httpd,buckets/apr_buckets_simple.c,apr_bucket_transient_create,A,3,OBJECT,"IV, IV, RD","CHAR*, INT, PTR",STRUCT*,,,2,ffmpeg,fftools/sync_queue.c,sq_free,D,1,N/A,OD,,,ptr,N/A
+1,httpd,buckets/apr_buckets_socket.c,apr_bucket_socket_create,A,2,OBJECT,"IV, RD","PTR, PTR",STRUCT*,,,2,ffmpeg,libavutil/opt.c,av_opt_free,D,1,N/A,OD,,,ptr,N/A
+1,httpd,crypto/apr_crypto.c,apr_crypto_clear,A,3,SUCCESS FLAG,"RD, IV, RD","PTR, PTR, INT",INT,,,2,ffmpeg,libavutil/opt.c,av_opt_freep_ranges,D,1,N/A,OD,,,ptr,N/A
+1,httpd,crypto/apr_crypto_commoncrypto.c,crypto_make,A,4,SUCCESS FLAG,"RD, IV, RD","DPTR, PTR, CHAR*, PTR",INT,,,2,ffmpeg,libswresample/rematrix.c,swri_rematrix_free,D,1,N/A,RD,,,ptr,N/A
+1,httpd,crypto/apr_crypto_openssl.c,EVP_CIPHER_CTX_new,A,0,OBJECT,N/A,N/A,STRUCT*,,,,,,,,,,,,,,
 1,httpd,crypto/apr_crypto_commoncrypto.c,crypto_make,A,4,SUCCESS FLAG,"RD, IV, IV, RD","DPTR, PTR, CHAR*, PTR",INT,,,,,,,,,,,,,,
 1,httpd,dbd/apr_dbd_mysql.c,apr_bucket_lob_make,A,6,parent obj,"IV, IV, IV, IV, IV, IV","PTR, PTR, INT, INT, INT, PTR",STRUCT*,,,,,,,,,,,,,,
 1,httpd,dbd/apr_dbd_mysql.c,apr_bucket_lob_create,A,6,OBJECT,"IV, IV, IV, IV, IV, RD","PTR, PTR, INT, INT, INT, PTR",STRUCT*,,,,,,,,,,,,,,
