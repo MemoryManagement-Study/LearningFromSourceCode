@@ -1,6 +1,6 @@
 # LearningFromSourceCode
 This is a repository for  `Learning from Source Code - A Characteristic Study of User-Defined Memory Management Routines`.
-``
+
 `Overview.xlsx` -- An overview of all the data.
 
 `Github ranking` is a submodule used to collect popular github repositories.
