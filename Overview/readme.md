@@ -1,7 +1,7 @@
 # Overview
 
-## Overall Routine
-|  | Allocation Routines | Deallocation Routines |  |
+## Overall MMR
+|  | Allocation Routines | Deallocation Routines | All MMR |
 | --- | --- | --- | --- |
 | Cpython | 74 | 31 | 105 |
 | FFmpeg | 257 | 128 | 385 |
@@ -434,4 +434,298 @@
     </tr>
   </tbody>
 </table>
+
+## Correlation
+### 1. Call path length between diffrent user-defined memory management routines.
+<table dir="ltr" style="table-layout:fixed;font-size:10pt;font-family:Arial;width:0px;border-collapse:collapse;border:none" cellspacing="0" cellpadding="0" border="0">
+  <thead>
+    <tr style="height:21px;">
+      <th></th>
+      <th colspan=6>Allocation</th>
+      <th colspan=6>Deallocation</th>
+    </tr>
+  </thead><colgroup><col width="100"><col width="100"><col width="100"><col width="100"><col width="100"><col width="100"><col width="100"><col width="100"><col width="100"><col width="100"><col width="100"><col width="100"><col width="100"></colgroup>
+  <tbody>
+    <tr style="height:21px;">
+      <td style="border-right:1px solid #000000;border-bottom:1px solid #000000;border-left:1px solid #000000;overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;" data-sheets-value="{&quot;1&quot;:2,&quot;2&quot;:&quot;Application&quot;}">Call Path Length</td>
+      <td style="border-bottom:1px solid #000000;overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:0}">0</td>
+      <td style="border-bottom:1px solid #000000;overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:1}">1</td>
+      <td style="border-bottom:1px solid #000000;overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:2}">2</td>
+      <td style="border-bottom:1px solid #000000;overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:3}">3</td>
+      <td style="border-bottom:1px solid #000000;overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:4}">4</td>
+      <td style="border-right:1px solid #000000;border-bottom:1px solid #000000;overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:2,&quot;2&quot;:&quot;>4&quot;}">&gt;4</td>
+      <td style="border-bottom:1px solid #000000;overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:0}">0</td>
+      <td style="border-bottom:1px solid #000000;overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:1}">1</td>
+      <td style="border-bottom:1px solid #000000;overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:2}">2</td>
+      <td style="border-bottom:1px solid #000000;overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:3}">3</td>
+      <td style="border-bottom:1px solid #000000;overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:4}">4</td>
+      <td style="border-right:1px solid #000000;border-bottom:1px solid #000000;overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:2,&quot;2&quot;:&quot;>4&quot;}">&gt;4</td>
+    </tr>
+    <tr style="height:21px;">
+      <td style="border-right:1px solid #000000;border-left:1px solid #000000;overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;" data-sheets-value="{&quot;1&quot;:2,&quot;2&quot;:&quot;Cpython&quot;}">Cpython</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:10}">10</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:9}">9</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:13}">13</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:22}">22</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:6}">6</td>
+      <td style="border-right:1px solid #000000;overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:14}">14</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:8}">8</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:12}">12</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:2}">2</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:2}">2</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:2}">2</td>
+      <td style="border-right:1px solid #000000;overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:5}">5</td>
+    </tr>
+    <tr style="height:21px;">
+      <td style="border-right:1px solid #000000;border-left:1px solid #000000;overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;" data-sheets-value="{&quot;1&quot;:2,&quot;2&quot;:&quot;FFmpeg&quot;}">FFmpeg</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:2}">2</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:49}">49</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:154}">154</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:32}">32</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:18}">18</td>
+      <td style="border-right:1px solid #000000;overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:2}">2</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:17}">17</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:32}">32</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:59}">59</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:20}">20</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:0}">0</td>
+      <td style="border-right:1px solid #000000;overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:0}">0</td>
+    </tr>
+    <tr style="height:21px;">
+      <td style="border-right:1px solid #000000;border-left:1px solid #000000;overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;" data-sheets-value="{&quot;1&quot;:2,&quot;2&quot;:&quot;Httpd&quot;}">Httpd</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:9}">9</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:77}">77</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:12}">12</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:3}">3</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:0}">0</td>
+      <td style="border-right:1px solid #000000;overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:0}">0</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:7}">7</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:21}">21</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:7}">7</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:1}">1</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:0}">0</td>
+      <td style="border-right:1px solid #000000;overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:0}">0</td>
+    </tr>
+    <tr style="height:21px;">
+      <td style="border-right:1px solid #000000;border-left:1px solid #000000;overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;" data-sheets-value="{&quot;1&quot;:2,&quot;2&quot;:&quot;Memcached&quot;}">Memcached</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:2}">2</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:10}">10</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:2}">2</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:2}">2</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:1}">1</td>
+      <td style="border-right:1px solid #000000;overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:0}">0</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:4}">4</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:7}">7</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:2}">2</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:1}">1</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:1}">1</td>
+      <td style="border-right:1px solid #000000;overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:0}">0</td>
+    </tr>
+    <tr style="height:21px;">
+      <td style="border-right:1px solid #000000;border-left:1px solid #000000;overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;" data-sheets-value="{&quot;1&quot;:2,&quot;2&quot;:&quot;OpenSSL&quot;}">OpenSSL</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:1}">1</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:6}">6</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:33}">33</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:30}">30</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:7}">7</td>
+      <td style="border-right:1px solid #000000;overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:2}">2</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:1}">1</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:4}">4</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:36}">36</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:10}">10</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:5}">5</td>
+      <td style="border-right:1px solid #000000;overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:0}">0</td>
+    </tr>
+    <tr style="height:21px;">
+      <td style="border-right:1px solid #000000;border-left:1px solid #000000;overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;" data-sheets-value="{&quot;1&quot;:2,&quot;2&quot;:&quot;Redis&quot;}">Redis</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:1}">1</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:4}">4</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:14}">14</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:46}">46</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:36}">36</td>
+      <td style="border-right:1px solid #000000;overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:19}">19</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:6}">6</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:7}">7</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:54}">54</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:19}">19</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:2}">2</td>
+      <td style="border-right:1px solid #000000;overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:1}">1</td>
+    </tr>
+    <tr style="height:21px;">
+      <td style="border-right:1px solid #000000;border-bottom:1px solid #000000;border-left:1px solid #000000;overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;" data-sheets-value="{&quot;1&quot;:2,&quot;2&quot;:&quot;Total&quot;}">Total</td>
+      <td style="border-bottom:1px solid #000000;overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:25}" data-sheets-formula="=SUM(R[-6]C[0]:R[-1]C[0])">25</td>
+      <td style="border-bottom:1px solid #000000;overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:155}" data-sheets-formula="=SUM(R[-6]C[0]:R[-1]C[0])">155</td>
+      <td style="border-bottom:1px solid #000000;overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:228}" data-sheets-formula="=SUM(R[-6]C[0]:R[-1]C[0])">228</td>
+      <td style="border-bottom:1px solid #000000;overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:135}" data-sheets-formula="=SUM(R[-6]C[0]:R[-1]C[0])">135</td>
+      <td style="border-bottom:1px solid #000000;overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:68}" data-sheets-formula="=SUM(R[-6]C[0]:R[-1]C[0])">68</td>
+      <td style="border-bottom:1px solid #000000;overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:37}" data-sheets-formula="=SUM(R[-6]C[0]:R[-1]C[0])">37</td>
+      <td style="border-bottom:1px solid #000000;overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:43}" data-sheets-formula="=SUM(R[-6]C[0]:R[-1]C[0])">43</td>
+      <td style="border-bottom:1px solid #000000;overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:83}" data-sheets-formula="=SUM(R[-6]C[0]:R[-1]C[0])">83</td>
+      <td style="border-bottom:1px solid #000000;overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:160}" data-sheets-formula="=SUM(R[-6]C[0]:R[-1]C[0])">160</td>
+      <td style="border-bottom:1px solid #000000;overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:53}" data-sheets-formula="=SUM(R[-6]C[0]:R[-1]C[0])">53</td>
+      <td style="border-bottom:1px solid #000000;overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:10}" data-sheets-formula="=SUM(R[-6]C[0]:R[-1]C[0])">10</td>
+      <td style="border-bottom:1px solid #000000;overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:6}" data-sheets-formula="=SUM(R[-6]C[0]:R[-1]C[0])">6</td>
+    </tr>
+  </tbody>
+</table>
+
+Ratio (Percentage):
+
+<table dir="ltr" style="table-layout:fixed;font-size:10pt;font-family:Arial;width:0px;border-collapse:collapse;border:none" cellspacing="0" cellpadding="0" border="0">
+  <thead>
+    <tr style="height:21px;">
+      <th></th>
+      <th colspan=6>Allocation</th>
+      <th colspan=6>Deallocation</th>
+    </tr>
+  </thead><colgroup><col width="100"><col width="100"><col width="100"><col width="100"><col width="100"><col width="100"><col width="100"><col width="100"><col width="100"><col width="100"><col width="100"><col width="100"><col width="100"></colgroup>
+  <tbody>
+    <tr style="height:21px;">
+      <td style="border-right:1px solid #000000;border-bottom:1px solid #000000;border-left:1px solid #000000;overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;" data-sheets-value="{&quot;1&quot;:2,&quot;2&quot;:&quot;Application&quot;}">Call Path Length<br></td>
+      <td style="border-bottom:1px solid #000000;overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:0}">0</td>
+      <td style="border-bottom:1px solid #000000;overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:1}">1</td>
+      <td style="border-bottom:1px solid #000000;overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:2}">2</td>
+      <td style="border-bottom:1px solid #000000;overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:3}">3</td>
+      <td style="border-bottom:1px solid #000000;overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:4}">4</td>
+      <td style="border-right:1px solid #000000;border-bottom:1px solid #000000;overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:2,&quot;2&quot;:&quot;>4&quot;}">&gt;4</td>
+      <td style="border-bottom:1px solid #000000;overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:0}">0</td>
+      <td style="border-bottom:1px solid #000000;overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:1}">1</td>
+      <td style="border-bottom:1px solid #000000;overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:2}">2</td>
+      <td style="border-bottom:1px solid #000000;overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:3}">3</td>
+      <td style="border-bottom:1px solid #000000;overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:4}">4</td>
+      <td style="border-right:1px solid #000000;border-bottom:1px solid #000000;overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:2,&quot;2&quot;:&quot;>4&quot;}">&gt;4</td>
+    </tr>
+    <tr style="height:21px;">
+      <td style="border-right:1px solid #000000;border-left:1px solid #000000;overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;" data-sheets-value="{&quot;1&quot;:2,&quot;2&quot;:&quot;Cpython&quot;}">Cpython</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:13.513513513513514}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-14]*100">13.51351351</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:12.162162162162163}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-15]*100">12.16216216</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:17.56756756756757}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-16]*100">17.56756757</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:29.72972972972973}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-17]*100">29.72972973</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:8.108108108108109}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-18]*100">8.108108108</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:18.91891891891892}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-19]*100">18.91891892</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:25.806451612903224}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-19]*100">25.80645161</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:38.70967741935484}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-20]*100">38.70967742</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:6.451612903225806}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-21]*100">6.451612903</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:6.451612903225806}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-22]*100">6.451612903</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:6.451612903225806}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-23]*100">6.451612903</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:16.129032258064516}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-24]*100">16.12903226</td>
+    </tr>
+    <tr style="height:21px;">
+      <td style="border-right:1px solid #000000;border-left:1px solid #000000;overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;" data-sheets-value="{&quot;1&quot;:2,&quot;2&quot;:&quot;FFmpeg&quot;}">FFmpeg</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:0.7782101167315175}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-14]*100">0.7782101167</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:19.06614785992218}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-15]*100">19.06614786</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:59.92217898832685}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-16]*100">59.92217899</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:12.45136186770428}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-17]*100">12.45136187</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:7.003891050583658}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-18]*100">7.003891051</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:0.7782101167315175}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-19]*100">0.7782101167</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:13.28125}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-19]*100">13.28125</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:25}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-20]*100">25</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:46.09375}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-21]*100">46.09375</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:15.625}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-22]*100">15.625</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:0}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-23]*100">0</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:0}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-24]*100">0</td>
+    </tr>
+    <tr style="height:21px;">
+      <td style="border-right:1px solid #000000;border-left:1px solid #000000;overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;" data-sheets-value="{&quot;1&quot;:2,&quot;2&quot;:&quot;Httpd&quot;}">Httpd</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:8.91089108910891}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-14]*100">8.910891089</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:76.23762376237624}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-15]*100">76.23762376</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:11.881188118811881}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-16]*100">11.88118812</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:2.9702970297029703}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-17]*100">2.97029703</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:0}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-18]*100">0</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:0}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-19]*100">0</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:19.444444444444446}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-19]*100">19.44444444</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:58.333333333333336}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-20]*100">58.33333333</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:19.444444444444446}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-21]*100">19.44444444</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:2.7777777777777777}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-22]*100">2.777777778</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:0}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-23]*100">0</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:0}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-24]*100">0</td>
+    </tr>
+    <tr style="height:21px;">
+      <td style="border-right:1px solid #000000;border-left:1px solid #000000;overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;" data-sheets-value="{&quot;1&quot;:2,&quot;2&quot;:&quot;Memcached&quot;}">Memcached</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:11.76470588235294}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-14]*100">11.76470588</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:58.82352941176471}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-15]*100">58.82352941</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:11.76470588235294}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-16]*100">11.76470588</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:11.76470588235294}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-17]*100">11.76470588</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:5.88235294117647}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-18]*100">5.882352941</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:0}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-19]*100">0</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:26.666666666666668}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-19]*100">26.66666667</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:46.666666666666664}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-20]*100">46.66666667</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:13.333333333333334}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-21]*100">13.33333333</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:6.666666666666667}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-22]*100">6.666666667</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:6.666666666666667}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-23]*100">6.666666667</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:0}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-24]*100">0</td>
+    </tr>
+    <tr style="height:21px;">
+      <td style="border-right:1px solid #000000;border-left:1px solid #000000;overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;" data-sheets-value="{&quot;1&quot;:2,&quot;2&quot;:&quot;OpenSSL&quot;}">OpenSSL</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:1.2658227848101267}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-14]*100">1.265822785</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:7.59493670886076}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-15]*100">7.594936709</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:41.77215189873418}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-16]*100">41.7721519</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:37.9746835443038}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-17]*100">37.97468354</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:8.860759493670885}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-18]*100">8.860759494</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:2.5316455696202533}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-19]*100">2.53164557</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:1.7857142857142856}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-19]*100">1.785714286</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:7.142857142857142}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-20]*100">7.142857143</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:64.28571428571429}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-21]*100">64.28571429</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:17.857142857142858}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-22]*100">17.85714286</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:8.928571428571429}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-23]*100">8.928571429</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:0}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-24]*100">0</td>
+    </tr>
+    <tr style="height:21px;">
+      <td style="border-right:1px solid #000000;border-left:1px solid #000000;overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;" data-sheets-value="{&quot;1&quot;:2,&quot;2&quot;:&quot;Redis&quot;}">Redis</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:0.8333333333333334}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-14]*100">0.8333333333</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:3.3333333333333335}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-15]*100">3.333333333</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:11.666666666666666}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-16]*100">11.66666667</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:38.333333333333336}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-17]*100">38.33333333</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:30}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-18]*100">30</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:15.833333333333332}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-19]*100">15.83333333</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:6.741573033707865}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-19]*100">6.741573034</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:7.865168539325842}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-20]*100">7.865168539</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:60.67415730337079}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-21]*100">60.6741573</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:21.34831460674157}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-22]*100">21.34831461</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:2.247191011235955}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-23]*100">2.247191011</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:1.1235955056179776}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-24]*100">1.123595506</td>
+    </tr>
+    <tr style="height:21px;">
+      <td style="border-right:1px solid #000000;border-bottom:1px solid #000000;border-left:1px solid #000000;overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;" data-sheets-value="{&quot;1&quot;:2,&quot;2&quot;:&quot;Total&quot;}">Total</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:3.8580246913580245}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-14]*100">3.858024691</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:23.919753086419753}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-15]*100">23.91975309</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:35.18518518518518}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-16]*100">35.18518519</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:20.833333333333336}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-17]*100">20.83333333</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:10.493827160493826}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-18]*100">10.49382716</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:5.709876543209877}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-19]*100">5.709876543</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:12.112676056338028}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-19]*100">12.11267606</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:23.380281690140844}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-20]*100">23.38028169</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:45.07042253521127}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-21]*100">45.07042254</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:14.929577464788732}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-22]*100">14.92957746</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:2.8169014084507045}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-23]*100">2.816901408</td>
+      <td style="overflow:hidden;padding:0px 3px 0px 3px;vertical-align:bottom;text-align:right;" data-sheets-value="{&quot;1&quot;:3,&quot;3&quot;:1.6901408450704223}" data-sheets-formula="=R[0]C[-14]/R[-56]C[-24]*100">1.690140845</td>
+    </tr>
+  </tbody>
+</table>
+
+## Reliability
+Year from 2018 to 2022
+
+### External
+|  | Total | caught by script | manually analysis | ML-R | ML-NR | DF-R | DF-NR | Use-After-Free | UAF-NR |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| CPython | 14970 | 64 | 58 | 43 | 10 | 3 | 0 | 1 | 1 |
+| FFmpeg | 19583 | 93 | 92 | 79 | 1 | 10 | 0 | 1 | 1 |
+| Httpd | 2777 | 8 | 8 | 5 | 0 | 1 | 0 | 1 | 1 |
+| Memcached | 507 | 10 | 8 | 3 | 3 | 1 | 1 | 0 | 0 |
+| OpenSSL | 11156 | 131 | 124 | 91 | 0 | 21 | 0 | 12 | 0 |
+| Redis | 5003 | 82 | 59 | 53 | 2 | 3 | 0 | 1 | 0 |
+| Total | 53996 | 388 | 349 | 274 | 16 | 39 | 1 | 16 | 3 |
+
+### Internal
+|  | Total - 2021 + 2022 | api related | func | sec | perf | incr | Sum |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| CPython | 6704 | 34 | 28 | 0 | 2 | 4 | 34 |
+| FFmpeg | 8518 | 157 | 116 | 19 | 5 | 9 | 149 |
+| Httpd | 886 | 5 | 1 | 0 | 0 | 0 | 1 |
+| Memcached | 198 | 6 | 4 | 0 | 0 | 0 | 4 |
+| OpenSSL | 4416 | 56 | 43 | 1 | 2 | 6 | 52 |
+| Redis | 1544 | 113 | 63 | 5 | 16 | 5 | 89 |
+| Total | 22266 | 371 | 255 | 25 | 25 | 24 | 329 |
+
 
